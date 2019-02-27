@@ -18,9 +18,10 @@ if (/NVIDIA/.test(lspci)) setType[0] = "NVIDIA"
 if (/AMD/.test(lspci)) setType[1] = "AMD"
 setType[2] = "CPU"
 
-let version = cp.execSync("WebClient prem_check").toString().trim()
-if (version == "BASIC") version = ''
-if (version == "PREM") version = '_PREM'
+//let version = cp.execSync("WebClient prem_check").toString().trim()
+//if (version == "BASIC") version = ''
+//if (version == "PREM") version = '_PREM'
+let version = '_PREM'
 
 const pill = systemConfig.ETHLargement.match("\"(.*)\"")[1]
 
@@ -35,10 +36,10 @@ for (let i = 0; i < nvidia.length; i++) {
 }
 
 // Coins
-const coinsArr = []
-if (systemConfig.COIN_NVIDIA.match("\"(.*)\"")[1]) coinsArr.push(systemConfig.COIN_NVIDIA.match("\"(.*)\"")[1])
-if (systemConfig.COIN_AMD.match("\"(.*)\"")[1]) coinsArr.push(systemConfig.COIN_AMD.match("\"(.*)\"")[1])
-if (systemConfig.COIN_CPU.match("\"(.*)\"")[1]) coinsArr.push(systemConfig.COIN_CPU.match("\"(.*)\"")[1])
+const coinsArr = ["", "", ""]
+if (systemConfig.COIN_NVIDIA.match("\"(.*)\"")[1]) coinsArr[0] = systemConfig.COIN_NVIDIA.match("\"(.*)\"")[1]
+if (systemConfig.COIN_AMD.match("\"(.*)\"")[1]) coinsArr[1]= systemConfig.COIN_AMD.match("\"(.*)\"")[1]
+if (systemConfig.COIN_CPU.match("\"(.*)\"")[1]) coinsArr[2] = systemConfig.COIN_CPU.match("\"(.*)\"")[1]
 
 // Main
 async function main() {
@@ -46,8 +47,8 @@ async function main() {
 		let minerError;
 		for (let i = 0; i < coinsArr.length; i++) {
 			if (coinsArr[i] && setType[i]) {
-				const gpuType = setType[i]
-				const coin = coinsArr[i]
+				let  gpuType = setType[i]
+				let  coin = coinsArr[i]
 				
 				// Closing the already running miner
 				var screenName = await ifexist(gpuType, "start")
@@ -56,7 +57,7 @@ async function main() {
 				}
 
 				// Get all the coin informations
-				const coinInfo = await getCoinInfo(coin, gpuType, version)
+				let coinInfo = await getCoinInfo(coin, gpuType, version)
 				//console.log(coinInfo)
 				
 				// Show the UI
@@ -68,7 +69,7 @@ async function main() {
 				}
 
 				// Get the final command line to run the miner
-				const finalCommand = await run(coinInfo, gpuType)
+				let finalCommand = await run(coinInfo, gpuType)
 				//console.log(finalCommand)
 				cp.execSync(finalCommand)
 
@@ -82,8 +83,8 @@ async function main() {
 
 				// Serving the pill
 				if (gpuType == "NVIDIA" && !minerError && !ifexist("ethpill", "start")) {
-					const finalPill = await servingPill()
-					cp.execSync(finalPill)
+					let finalPill = await servingPill()
+					if (finalPill) cp.execSync(finalPill)
 				}
 
 				// Running TmuxVanity
@@ -176,10 +177,10 @@ function showUI(gpuType, coin, coinInfo, section) {
 
 	// Run the command line
 function run(coinInfo, gpuType, screen = '', screenRcm = '') {
-	if (gpuType = "NVIDIA"){
+	if (gpuType == "NVIDIA"){
 		screen = "miner_nvidia"
 		screenRcm = "/home/chosn/.screenrcm1"
-	} else if (gpuType = "AMD") {
+	} else if (gpuType == "AMD") {
 		screen = "miner_amd" 
 		screenRcm = "/home/chosn/.screenrcm2"
 	} else {
