@@ -29,7 +29,7 @@ const json = {
 	"_id": null,
 	"New Time": new Date().getTime(),
 	"Old Time": null,
-	"Username": systemConfig.USERNAME.match("\"(.*)\"")[1],
+	"Username": systemConfig.USERNAME_ALT.match("\"(.*)\"")[1],
 	"Password": systemConfig.PASSWORD.match("\"(.*)\"")[1],
 	"Hostname" : systemConfig.RIGNAME.match("\"(.*)\"")[1],
 	"Nvidia": {
@@ -37,6 +37,7 @@ const json = {
 		"Algo": null,
 		"Total Hashrate": null,
 		"Avg Temperature": null,
+		"Total Watt": null,
 		"Coin Info": {},
 		"GPU": []
 	},
@@ -45,6 +46,7 @@ const json = {
 		"Algo": null,
 		"Total Hashrate": null,
 		"Avg Temperature": null,
+		"Total Watt": null,
 		"Coin Info": {},
 		"GPU": {}
 	},
@@ -143,17 +145,20 @@ async function getGPU() {
 				gpuObject["Core Clock"] = gpu[1]
 				gpuObject["Mem Clock"] = gpu[2]
 				gpuObject["Temperature"] = gpu[3]
-				gpuObject["Watt"] = gpu[4]
+				gpuObject["Watt"] = gpu[4].split(' ')[0]
 				gpuObject["Fan Speed"] = gpu[5]
 				gpuObject["Name"] = gpu[7]	
 				json["Nvidia"]["GPU"].push(gpuObject)
 			}
 
 			let avgTemperature = 0
+			let totalWatt = 0
 			for (let i = 0; i < json["Nvidia"]["GPU"].length; i++) {
 				avgTemperature += json["Nvidia"]["GPU"][i]["Temperature"]
+				totalWatt += json["Nvidia"]["GPU"][i]["Watt"]
 			}
 			json["Nvidia"]["Avg Temperature"] = (avgTemperature / json["Nvidia"]["GPU"].length).toFixed(2) + " °C"
+			json["Nvidia"]["Total Watt"] = Number(totalWatt).toFixed(2)
 		})
 	}
 
@@ -184,10 +189,13 @@ async function getGPU() {
     }
 
 		let avgTemperature = 0
+		let totalWatt = 0
 		for (let i = 0; i < json["Amd"]["GPU"].length; i++) {
 			avgTemperature += json["Amd"]["GPU"][i]["Temperature"]
+			totalWatt += json["Amd"]["GPU"][i]["Watt"]
 		}
 		json["Amd"]["Avg Temperature"] = (avgTemperature / json["Amd"]["GPU"].length).toFixed(2) + " °C"
+		json["Amd"]["Total Watt"] = +totalWatt.toFixed(2)
 	}
 }
 

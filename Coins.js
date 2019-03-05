@@ -3,7 +3,7 @@ const fs = require('fs')
 const parser = require('parse-ini')
 const chalk = require('chalk')
 const cp = require('child_process')
-const CoinsMiners = require('/home/chosn/CHOSN/WebSock/private/lib/coins_miners.js')
+const CoinsMiners = require('./coins_miners.js')
 var ProgressBar = require('progress');
 
 // Configs Files Parser
