@@ -1,0 +1,18 @@
+{
+  "RVN": {
+    "Algo": "X16R",
+    "Miner": "T-Rex",
+    "Options": "",
+    "Wallet": "",
+    "Pool": "rvn.suprnova.cc",
+    "Port": "6667",
+    "Username": "nesci",
+    "Worker": "Rig1",
+    "Password": "x",
+    "Alternative Pool": "",
+    "Alternative Port": "",
+    "Alternative Username": "",
+    "Alternative Worker": "",
+    "Alternative Password": ""
+  }
+}
