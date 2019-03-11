@@ -1,0 +1,17 @@
+.cache/
+.bash_logout
+Downloads/
+.pki/
+.ssh/
+.Xauthority
+.bash_profile
+.local/
+.node_repl_history
+.repoconfig/
+.Xdefaults
+.bash_history
+.bashrc
+.config/
+.nv/
+.vscode-oss/
+.xinitrc
