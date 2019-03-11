@@ -104,7 +104,9 @@ async function getGPU(brand) {
 				let gpuObject = clearVars()
 				gpuObject["Utilization"] = gpu[0]
 				gpuObject["Core Clock"] = gpu[1]
+				gpuObject["Max Clock"] = gpu[9]
 				gpuObject["Mem Clock"] = gpu[2]
+				gpuObject["Max Mem"] = gpu[10]
 				gpuObject["Temperature"] = gpu[3]
 				gpuObject["Watt"] = gpu[4]
 				gpuObject["Fan Speed"] = gpu[5]
@@ -165,7 +167,9 @@ function clearVars() {
 		let gpuObject = {
 		"Utilization": null,
 		"Core Clock": null,
+		"Max Clock": null,
 		"Mem Clock": null,
+		"Max Mem": null,
 		"Temperature": null,
 		"Watt": null,
 		"Fan Speed": null,

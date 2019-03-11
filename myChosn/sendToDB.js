@@ -25,7 +25,7 @@ async function pushToDB() {
 }
 
 pushToDB()
-setInterval(pushToDB(), 10000);
+setInterval(pushToDB(), 10000)
 
 function setID(checkForID) {
 	if (checkForID == undefined) {
