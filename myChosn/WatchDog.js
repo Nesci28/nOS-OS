@@ -5,26 +5,38 @@ const cp = require('child_process')
 
 // Setup
 const info = require('./getInfo.js')
-const maxTemp = require('../Overlocks.json')
+const maxTemp = require('../Overclocks.json')
 
 const utilization = []
 const coreClock = []
 const memClock = []
 const temperature = []
 
-async function main() {  
-  let json = await info.info.v
-  
+async function main() {   
+  let json = await info.info
+  console.log('hi', json)
+
   await getUtilization(json)
   await getCoreClock(json)
   await getMemClock(json)
   await getTemp(json)
+  let watchdogStatus = "Ok"
+  module.exports = watchdogStatus
 }
 
-main()
-setInterval(main(), 15000)
+
+(async() => {
+  await main()  
+  console.log('2')
+})()
+
+setInterval(async () => {
+  console.log(watchdogStatus)
+  await main()
+}, 10000)
 
 async function getTemp(infos) {
+  console.log('getTemp')
   if (infos["Nvidia"]["GPU"].length > 0) await getGPUTemp(infos, "Nvidia")
   if (infos["Amd"]["GPU"].length > 0) await getGPUTemp(infos, "Amd")
   
@@ -47,14 +59,14 @@ async function getTemp(infos) {
   }
 }
 
-async function getCoreClock(infos) {
+async function getMemClock(infos) {
   if (infos["Nvidia"]["GPU"].length > 0) await getGPUMemClock(infos, "Nvidia")
-  if (infos["Amd"]["GPU"].length > 0) await getGPUMemClock(infos, "Amd")
+  // if (infos["Amd"]["GPU"].length > 0) await getGPUMemClock(infos, "Amd")
   
   function getGPUMemClock(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
       let gpuCoreClock = infos[brand]["GPU"][i.toString()]["Mem Clock"]
-      if (gpuCoreClock > 90) {
+      if (gpuCoreClock < infos[brand]["GPU"][i.toString()]["Max Mem"] - 200) {
         memClock[i] = 0
       } else {
         if (memClock[i] == null) {
@@ -72,12 +84,12 @@ async function getCoreClock(infos) {
 
 async function getCoreClock(infos) {
   if (infos["Nvidia"]["GPU"].length > 0) await getGPUCoreClock(infos, "Nvidia")
-  if (infos["Amd"]["GPU"].length > 0) await getGPUCoreClock(infos, "Amd")
+  // if (infos["Amd"]["GPU"].length > 0) await getGPUCoreClock(infos, "Amd")
   
   function getGPUCoreClock(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
       let gpuCoreClock = infos[brand]["GPU"][i.toString()]["Core Clock"]
-      if (gpuCoreClock > 90) {
+      if (gpuCoreClock < infos[brand]["GPU"][i.toString()]["Max Clock"] - 200) {
         coreClock[i] = 0
       } else {
         if (coreClock[i] == null) {
@@ -118,14 +130,14 @@ async function getUtilization(infos) {
 
 async function restart(reason, gpuPosition) {
   if (reason == "utils") {
-    fs.writeFileSync("../Logs/Error Logs.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Utilization is too low")
+    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Utilization is too low")
   } else if (reason == "coreClock") {
-    fs.writeFileSync("../Logs/Error Logs.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Core Clock is too low")
+    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Core Clock is too low")
   } else if (reason == "memClock") {
-    fs.writeFileSync("../Logs/Error Logs.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Mem Clock is too low")
+    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Mem Clock is too low")
   } else if (reason == "maxTemp") {
-    fs.writeFileSync("../Logs/Error Logs.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Temperature is too high")
+    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Temperature is too high")
   }
-  
-  await cp.execSync('sudo shutdown -r now')
+  watchdogStatus = "Problem detected"
+  // await cp.execSync('sudo shutdown -r now')
 } 

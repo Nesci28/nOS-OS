@@ -9,6 +9,7 @@ const amdGPU = require('./amd_rocm_parser.js')
 // Parsers
 const systemConfig = require('../SystemConfig.json')
 const coinsConfig = require('../CoinsConfig.json')
+const overclocksConfig = require('../Overclocks.json')
 
 // GPU Setup
 const setType = []
@@ -19,6 +20,7 @@ setType[2] = "CPU"
 
 // Seting up the object
 const infoCache = new NodeCache()
+module.exports = infoCache.data
 
 let json = {
 	"_id": null,
@@ -50,7 +52,10 @@ let json = {
 		"Total Hashrate": null,
 		"Coin Info": {},
 		"GPU": {}
-	}
+	},
+	"System Config": systemConfig,
+	"Coins Config": coinsConfig,
+	"Overclocks Config": overclocksConfig
 }
 
 // main
@@ -72,21 +77,18 @@ async function main() {
 	}
 
 	// console.log(json)
-	return json
 }
 
 async function start() {
 	await main()
-	infoCache.set("info", json, 11000)
+	await infoCache.set("info", json, 11000)
 }
 
 start()
-module.exports = infoCache.data
-
-setInterval(async () => {
-	await main()
-	infoCache.set("info", json, 11000)
-}, 10000)
+// setInterval(async () => {
+// 	await main()
+// 	infoCache.set("info", json, 11000)
+// }, 10000)
 
 async function getCoins(brand) {
 	json[brand]["Coin"] = systemConfig[brand + " Coin"]
@@ -104,7 +106,7 @@ async function getGPU(brand) {
 				let gpuObject = clearVars()
 				gpuObject["Utilization"] = gpu[0]
 				gpuObject["Core Clock"] = gpu[1]
-				gpuObject["Max Clock"] = gpu[9]
+				gpuObject["Max Core"] = gpu[9]
 				gpuObject["Mem Clock"] = gpu[2]
 				gpuObject["Max Mem"] = gpu[10]
 				gpuObject["Temperature"] = gpu[3]
@@ -167,7 +169,7 @@ function clearVars() {
 		let gpuObject = {
 		"Utilization": null,
 		"Core Clock": null,
-		"Max Clock": null,
+		"Max Core": null,
 		"Mem Clock": null,
 		"Max Mem": null,
 		"Temperature": null,

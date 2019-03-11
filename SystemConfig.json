@@ -10,5 +10,6 @@
   "Wifi Name": "",
   "Wifi Password": "",
 
-  "EthPill": true
+  "EthPill": true,
+  "Serial": 1
 }
