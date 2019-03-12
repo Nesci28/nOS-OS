@@ -3,8 +3,8 @@ const cp = require('child_process')
 const ip = require('ip')
 const NodeCache = require('node-cache')
 
-const nvidiaGPU = require('./gpu.js')
-const amdGPU = require('./amd_rocm_parser.js')
+const nvidiaGPU = require('./helpers/gpu.js')
+const amdGPU = require('./helpers/amd_rocm_parser.js')
 
 // Parsers
 const systemConfig = require('../SystemConfig.json')
@@ -17,10 +17,6 @@ const lspci = cp.execSync("lspci | grep VGA").toString().trim()
 if (/NVIDIA/.test(lspci)) setType[0] = "NVIDIA"
 if (/AMD/.test(lspci)) setType[1] = "AMD"
 setType[2] = "CPU"
-
-// Seting up the object
-const infoCache = new NodeCache()
-module.exports = infoCache.data
 
 let json = {
 	"_id": null,
@@ -58,8 +54,14 @@ let json = {
 	"Overclocks Config": overclocksConfig
 }
 
+// Exporting the json
+module.exports = json
+
 // main
 async function main() {
+	json["Old Time"] = json["New Time"]
+	json["New Time"] = new Date().getTime()
+
 	if (systemConfig["Nvidia Coin"] && setType[0]) {
 		await getCoins('Nvidia')
 		await getGPU('Nvidia')
@@ -77,18 +79,15 @@ async function main() {
 	}
 
 	// console.log(json)
+	return json
 }
 
-async function start() {
-	await main()
-	await infoCache.set("info", json, 11000)
-}
-
-start()
-// setInterval(async () => {
-// 	await main()
-// 	infoCache.set("info", json, 11000)
-// }, 10000)
+(async() => {
+  json = await main()  
+})()
+setInterval(async () => {
+	json = await main()
+}, 10000)
 
 async function getCoins(brand) {
 	json[brand]["Coin"] = systemConfig[brand + " Coin"]

@@ -1,6 +1,5 @@
 // Dependancies
 const fs = require('fs')
-const chalk = require('chalk')
 const cp = require('child_process')
 
 // Setup
@@ -12,38 +11,43 @@ const coreClock = []
 const memClock = []
 const temperature = []
 
-async function main() {   
-  let json = await info.info
-  console.log('hi', json)
+// Exporting watchdog result
+let watchdogStatus = {
+  "Watchdog": undefined
+}
+module.exports = watchdogStatus
 
-  await getUtilization(json)
-  await getCoreClock(json)
-  await getMemClock(json)
-  await getTemp(json)
-  let watchdogStatus = "Ok"
-  module.exports = watchdogStatus
+async function main() {   
+  let json = await info
+  let watchdogUtil = await getUtilization(json)
+  if (!watchdogUtil) return "Utilization"
+  let watchdogCore = await getCoreClock(json)
+  if (!watchdogCore) return "Core"
+  let watchdogMem = await getMemClock(json)
+  if (!watchdogMem) return "Mem"
+  let watchdogTemp = await getTemp(json)
+  if (!watchdogTemp) return "Temperature"
+  return true
 }
 
-
 (async() => {
-  await main()  
-  console.log('2')
+  watchdogStatus["Watchdog"] = await main()
 })()
-
 setInterval(async () => {
-  console.log(watchdogStatus)
-  await main()
+  watchdogStatus["Watchdog"] = await main()
 }, 10000)
 
+
 async function getTemp(infos) {
-  console.log('getTemp')
-  if (infos["Nvidia"]["GPU"].length > 0) await getGPUTemp(infos, "Nvidia")
+  if (infos["Nvidia"]["GPU"].length > 0) {
+    if (await getGPUTemp(infos, "Nvidia")) return true
+  }
   if (infos["Amd"]["GPU"].length > 0) await getGPUTemp(infos, "Amd")
   
   function getGPUTemp(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
-      let gpuTemperature = infos[brand]["GPU"][i.toString()]["Temperature"]
-      if (gpuTemperature > maxTemp["Max Temperature"]) {
+      let gpuTemperature = infos[brand]["GPU"][i.toString()]["Temperature"]    
+      if (gpuTemperature < maxTemp["Max Temperature"]) {
         temperature[i] = 0
       } else {
         if (temperature[i] == null) {
@@ -53,20 +57,26 @@ async function getTemp(infos) {
         }
         if (temperature[i] == 3) {
           restart("maxTemp")
-        } 
+        } else {
+          return false
+        }
       }
     }
+    return true
   }
 }
 
 async function getMemClock(infos) {
-  if (infos["Nvidia"]["GPU"].length > 0) await getGPUMemClock(infos, "Nvidia")
+  if (infos["Nvidia"]["GPU"].length > 0) {
+    if (await getGPUMemClock(infos, "Nvidia")) return true
+  }
   // if (infos["Amd"]["GPU"].length > 0) await getGPUMemClock(infos, "Amd")
   
   function getGPUMemClock(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
-      let gpuCoreClock = infos[brand]["GPU"][i.toString()]["Mem Clock"]
-      if (gpuCoreClock < infos[brand]["GPU"][i.toString()]["Max Mem"] - 200) {
+      let gpuMemClock = infos[brand]["GPU"][i.toString()]["Mem Clock"].split(' ')[0]
+      let gpuMemClockMax = infos[brand]["GPU"][i.toString()]["Max Mem"].split(' ')[0] - 200
+      if (gpuMemClock > gpuMemClockMax) {
         memClock[i] = 0
       } else {
         if (memClock[i] == null) {
@@ -76,20 +86,26 @@ async function getMemClock(infos) {
         }
         if (memClock[i] == 3) {
           restart("memClock")
-        } 
+        } else {
+          return false
+        }
       }
     }
+    return true
   }
 }
 
 async function getCoreClock(infos) {
-  if (infos["Nvidia"]["GPU"].length > 0) await getGPUCoreClock(infos, "Nvidia")
+  if (infos["Nvidia"]["GPU"].length > 0) {
+    if (await getGPUCoreClock(infos, "Nvidia")) return true
+  }
   // if (infos["Amd"]["GPU"].length > 0) await getGPUCoreClock(infos, "Amd")
   
   function getGPUCoreClock(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
-      let gpuCoreClock = infos[brand]["GPU"][i.toString()]["Core Clock"]
-      if (gpuCoreClock < infos[brand]["GPU"][i.toString()]["Max Clock"] - 200) {
+      let gpuCoreClock = infos[brand]["GPU"][i.toString()]["Core Clock"].split(' ')[0]
+      let gpuCoreClockMax = infos[brand]["GPU"][i.toString()]["Max Core"].split(' ')[0] - 200
+      if (gpuCoreClock > gpuCoreClockMax) {
         coreClock[i] = 0
       } else {
         if (coreClock[i] == null) {
@@ -99,19 +115,26 @@ async function getCoreClock(infos) {
         }
         if (coreClock[i] == 3) {
           restart("coreClock")
-        } 
+        } else {
+          return false
+        }
       }
     }
+    return true
   }
 }
 
 async function getUtilization(infos) {
-  if (infos["Nvidia"]["GPU"].length > 0) await getGPUUtilization(infos, "Nvidia")
-  if (infos["Amd"]["GPU"].length > 0) await getGPUUtilization(infos, "Amd")
+  if (infos["Nvidia"]["GPU"].length > 0) {
+    if (await getGPUUtilization(infos, "Nvidia")) return true
+  }
+  if (infos["Amd"]["GPU"].length > 0) {
+    if (await getGPUUtilization(infos, "Amd")) return true
+  }
     
   function getGPUUtilization(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
-      let gpuUtils = infos[brand]["GPU"][i.toString()]["Utilization"]
+      let gpuUtils = infos[brand]["GPU"][i.toString()]["Utilization"].split(' ')[0]
       if (gpuUtils > 90) {
         utilization[i] = 0
       } else {
@@ -122,9 +145,12 @@ async function getUtilization(infos) {
         }
         if (utilization[i] == 3) {
           restart("utils", i)
-        } 
+        } else {
+          return false
+        }
       }
     }
+    return true
   }
 }
 
@@ -138,6 +164,5 @@ async function restart(reason, gpuPosition) {
   } else if (reason == "maxTemp") {
     fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Temperature is too high")
   }
-  watchdogStatus = "Problem detected"
   // await cp.execSync('sudo shutdown -r now')
 } 
