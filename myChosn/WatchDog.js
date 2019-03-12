@@ -13,7 +13,20 @@ const temperature = []
 
 // Exporting watchdog result
 let watchdogStatus = {
-  "Watchdog": undefined
+  "Watchdog": {
+    "Nvidia": {
+      "Utilization": null,
+      "Core": null,
+      "Mem": null,
+      "Temperature": null
+    },
+    "Amd": {
+      "Utilization": null,
+      "Core": null,
+      "Mem": null,
+      "Temperature": null
+    }
+  }
 }
 module.exports = watchdogStatus
 
@@ -35,7 +48,7 @@ async function main() {
 })()
 setInterval(async () => {
   watchdogStatus["Watchdog"] = await main()
-}, 10000)
+}, 11000)
 
 
 async function getTemp(infos) {
@@ -47,9 +60,9 @@ async function getTemp(infos) {
   function getGPUTemp(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
       let gpuTemperature = infos[brand]["GPU"][i.toString()]["Temperature"]    
-      if (gpuTemperature < maxTemp["Max Temperature"]) {
+      if (gpuTemperature < maxTemp[brand]["Max Temperature"]) {
         temperature[i] = 0
-      } else {
+      } else if (gpuTemperature > maxTemp[brand]["Max Temperature"] + 10) {
         if (temperature[i] == null) {
           temperature[i] = 1
         } else {
@@ -75,7 +88,7 @@ async function getMemClock(infos) {
   function getGPUMemClock(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
       let gpuMemClock = infos[brand]["GPU"][i.toString()]["Mem Clock"].split(' ')[0]
-      let gpuMemClockMax = infos[brand]["GPU"][i.toString()]["Max Mem"].split(' ')[0] - 200
+      let gpuMemClockMax = infos[brand]["GPU"][i.toString()]["Max Mem"].split(' ')[0] - 300
       if (gpuMemClock > gpuMemClockMax) {
         memClock[i] = 0
       } else {
@@ -104,7 +117,7 @@ async function getCoreClock(infos) {
   function getGPUCoreClock(infos, brand) {
     for (let i = 0; i < infos[brand]["GPU"].length; i++) {
       let gpuCoreClock = infos[brand]["GPU"][i.toString()]["Core Clock"].split(' ')[0]
-      let gpuCoreClockMax = infos[brand]["GPU"][i.toString()]["Max Core"].split(' ')[0] - 200
+      let gpuCoreClockMax = infos[brand]["GPU"][i.toString()]["Max Core"].split(' ')[0] - 300
       if (gpuCoreClock > gpuCoreClockMax) {
         coreClock[i] = 0
       } else {
@@ -156,13 +169,13 @@ async function getUtilization(infos) {
 
 async function restart(reason, gpuPosition) {
   if (reason == "utils") {
-    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Utilization is too low")
+    fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Utilization is too low")
   } else if (reason == "coreClock") {
-    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Core Clock is too low")
+    fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Core Clock is too low")
   } else if (reason == "memClock") {
-    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Mem Clock is too low")
+    fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Mem Clock is too low")
   } else if (reason == "maxTemp") {
-    fs.writeFileSync("../Logs/WatchDogError.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Temperature is too high")
+    fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Temperature is too high")
   }
   // await cp.execSync('sudo shutdown -r now')
 } 

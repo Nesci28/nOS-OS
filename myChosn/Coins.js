@@ -5,8 +5,7 @@ const cp = require('child_process')
 
 // Configs Files Parser
 const systemConfig = require('../SystemConfig.json')
-const coinsConfig = require('../CoinsConfig.json')
-const getInfo = require('./getInfo.js')
+const info = require('./getInfo.js')
 
 // Setup
 const setType = []
@@ -49,8 +48,7 @@ async function main() {
 				}
 
 				// Get all the coin informations
-				let coinInfo = await getInfo()
-				// console.log(coinInfo)
+				let coinInfo = await info
 				
 				// Get the miner informations
 				let minerJS = require('../Miners/' + coinInfo[gpuType]["Coin Info"]["miner"] + '/miner.js')
@@ -89,7 +87,7 @@ async function main() {
 
 				// Running TmuxVanity
 				if (!minerError) {
-					cp.execSync("sudo /home/chosn/CHOSN/ttyecho -n /dev/pts/2 /home/chosn/CHOSN/TmuxVanity")
+					cp.execSync("/home/chosn/CHOSN/TmuxVanity")
 				}
 			}
 		}
@@ -104,37 +102,46 @@ main()
 	// Show the ui
 function showUI(gpuType, coin, coinInfo, section) {
 	if (section == "main") {
-		if (gpuType == "NVIDIA") console.log(chalk.whiteBright('**********') + chalk.greenBright(' NVIDIA ') + chalk.whiteBright('**********'))
-		if (gpuType == "AMD") console.log(chalk.whiteBright('************') + chalk.redBright(' AMD ') + chalk.whiteBright('***********'))
-		if (gpuType == "CPU") console.log(chalk.whiteBright('************') + chalk.blueBright(' CPU ') + chalk.whiteBright('***********'))
+		if (gpuType == "Nvidia") console.log(chalk.whiteBright('**********') + chalk.greenBright(' NVIDIA ') + chalk.whiteBright('**********'))
+		if (gpuType == "Amd") console.log(chalk.whiteBright('************') + chalk.redBright(' AMD ') + chalk.whiteBright('***********'))
+		if (gpuType == "Cpu") console.log(chalk.whiteBright('************') + chalk.blueBright(' CPU ') + chalk.whiteBright('***********'))
 		console.log(chalk.whiteBright('Coin : ') + chalk.yellowBright(coinInfo[gpuType]["Coin"]))
 		console.log(chalk.whiteBright('Algo : ') + chalk.yellowBright(coinInfo[gpuType]["Algo"]))
 		console.log(chalk.whiteBright('Miner : ') + chalk.yellowBright(coinInfo[gpuType]["Coin Info"]["miner"]))
 		console.log(chalk.whiteBright('Command : ') + chalk.yellowBright(coinInfo[gpuType]["Coin Info"]["command"]))
-		if (gpuType == "NVIDIA") console.log(chalk.whiteBright('*******') + chalk.greenBright(' End of NVIDIA ') + chalk.whiteBright('*******'))
-		if (gpuType == "AMD") console.log(chalk.whiteBright('*********') + chalk.redBright(' End of AMD ') + chalk.whiteBright('********'))
-		if (gpuType == "CPU") console.log(chalk.whiteBright('*********') + chalk.blueBright(' End of CPU ') + chalk.whiteBright('********'))
+		if (gpuType == "Nvidia") console.log(chalk.whiteBright('*******') + chalk.greenBright(' End of NVIDIA ') + chalk.whiteBright('*******'))
+		if (gpuType == "Amd") console.log(chalk.whiteBright('*********') + chalk.redBright(' End of AMD ') + chalk.whiteBright('********'))
+		if (gpuType == "Cpu") console.log(chalk.whiteBright('*********') + chalk.blueBright(' End of CPU ') + chalk.whiteBright('********'))
 	}
 }
 
 	// Run the command line
 function run(coinInfo, gpuType, screen = '', screenRcm = '') {
-	if (gpuType == "NVIDIA"){
+	if (gpuType == "Nvidia"){
 		screen = "miner_nvidia"
-		screenRcm = "/home/chosn/.screenrcm1"
-	} else if (gpuType == "AMD") {
+		screenRcm = "../Logs/miner_nvidia.txt"
+		screenRcmBck = "../Logs/backups/miner_nvidia.txt"
+	} else if (gpuType == "Amd") {
 		screen = "miner_amd" 
-		screenRcm = "/home/chosn/.screenrcm2"
+		screenRcm = "../Logs/miner_amd.txt"
+		screenRcmBck = "../Logs/backups/miner_amd.txt"
 	} else {
 		screen = "miner_cpu"
-		screenRcm = "/home/chosn/.screenrcm3"
+		screenRcm = "../Logs/miner_cpu.txt"
+		screenRcmBck = "../Logs/backups/miner_cpu.txt"
 	}
-	return "screen -c " + screenRcm + " -dmSL " + screen + " " + coinInfo["finalCommand"]
+
+	if (fs.existsSync(screenRcm)) {
+		cp.execSync(`mv ${screenRcm} ${screenRcmBck}.bck`)
+		cp.execSync(`touch ${screenRcm}`)
+	}
+
+	return "screen -L -Logfile " + screenRcm + " -dmSL " + screen + " " + coinInfo[gpuType]["Coin Info"]["command"]
 }
 
 	// Check if the screen as been created
 function ifexist(gpuType, section) {
-	screenName = gpuType == "NVIDIA" ? 'miner_nvidia' : gpuType == "AMD" ? 'miner_amd' : gpuType == "ethpill" ? 'ethpill' : 'miner_cpu'
+	screenName = gpuType == "Nvidia" ? 'miner_nvidia' : gpuType == "Amd" ? 'miner_amd' : gpuType == "ethpill" ? 'ethpill' : 'miner_cpu'
  	let screenOutput
 	try {
 	  screenOutput = cp.execSync(`screen -ls ${screenName}`).toString().trim().split("\n")[1].trim().split('.')[0]

@@ -16,3 +16,6 @@ Downloads/
 .vscode-oss/
 .xinitrc
 .fehbg
+Logs/backups/**
+Logs/*.txt
+.tmux**

@@ -55,7 +55,7 @@ let json = {
 }
 
 // Exporting the json
-module.exports = json
+module.exports = main()
 
 // main
 async function main() {
@@ -63,8 +63,8 @@ async function main() {
 	json["New Time"] = new Date().getTime()
 
 	if (systemConfig["Nvidia Coin"] && setType[0]) {
-		await getCoins('Nvidia')
 		await getGPU('Nvidia')
+		await getCoins('Nvidia')
 		await getHashrate('Nvidia', json['Nvidia']['Coin Info']['miner'])
 	}
 	if (systemConfig["Amd Coin"] && setType[1]) {
@@ -86,8 +86,10 @@ async function main() {
   json = await main()  
 })()
 setInterval(async () => {
+	json["Nvidia"]["GPU"] = {}
+	json["Amd"]["GPU"] = {}
 	json = await main()
-}, 10000)
+}, 1000)
 
 async function getCoins(brand) {
 	json[brand]["Coin"] = systemConfig[brand + " Coin"]
