@@ -19,3 +19,7 @@ Downloads/
 Logs/backups/**
 Logs/*.txt
 .tmux**
+.esd**
+.npm/
+.mplayer/
+test**

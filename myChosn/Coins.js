@@ -1,39 +1,55 @@
-// Dependancies
-const fs = require('fs')
-const chalk = require('chalk')
-const cp = require('child_process')
+module.exports = async function(json) {
+	// Dependancies
+	const fs = require('fs')
+	const cp = require('child_process')
 
-// Configs Files Parser
-const systemConfig = require('../SystemConfig.json')
-const info = require('./getInfo.js')
+	// Configs Files Parser
+	const systemConfig = require('../SystemConfig.json')
 
-// Setup
-const setType = []
-const lspci = cp.execSync("lspci | grep VGA").toString().trim()
-if (/NVIDIA/.test(lspci)) setType[0] = "Nvidia"
-if (/AMD/.test(lspci)) setType[1] = "Amd"
-setType[2] = "Cpu"
-
-const pill = systemConfig["EthPill"]
-
-const nvidia = cp.execSync("nvidia-smi -L").toString().trim().split("\n")
-const nvidiaList = {}
-let pillGpu = ''
-for (let i = 0; i < nvidia.length; i++) {
-	nvidiaList[i] = nvidia[i].match(/\: (.*) \(/)[1]
-	if (nvidia[i].toLowerCase().includes("1080"|"1080ti")) {
-		pillGpu = true
+	let coinsJson = {
+		"Coins": {
+			"Nvidia": {
+				"Coin": null,
+				"Algo": null,
+				"Miner": null,
+				"Command": null
+			},
+			"Amd": {
+				"Coin": null,
+				"Algo": null,
+				"Miner": null,
+				"Command": null
+			}
+		}
 	}
-}
 
-// Coins
-const coinsArr = ["", "", ""]
-if (systemConfig["Nvidia Coin"]) coinsArr[0] = systemConfig["Nvidia Coin"]
-if (systemConfig["Amd Coin"]) coinsArr[1]= systemConfig["Amd Coin"]
-if (systemConfig["Cpu Coin"]) coinsArr[2] = systemConfig["Cpu Coin"]
+	// Setup
+	const setType = []
+	if (json.Nvidia.GPU.length > 0) setType[0] = "Nvidia"
+	if (json.Amd.GPU.length > 0) setType[1] = "Amd"
+	setType[2] = "Cpu"
 
-// Main
-async function main() {
+	// Coins
+	const coinsArr = ["", "", ""]
+	if (systemConfig["Nvidia Coin"]) coinsArr[0] = systemConfig["Nvidia Coin"]
+	if (systemConfig["Amd Coin"]) coinsArr[1]= systemConfig["Amd Coin"]
+	if (systemConfig["Cpu Coin"]) coinsArr[2] = systemConfig["Cpu Coin"]
+
+	// Pill
+	const pill = systemConfig["EthPill"]
+	if (pill == true) {
+		let pillGpu = ''
+		let name = ''
+		for (let i = 0; i < json.Nvidia.GPU.length; i++) {
+			name = json.Nvidia.GPU[i].Name
+			if (name.toLowerCase().includes("1080"|"1080ti")) {
+				pillGpu = true
+			}
+		}
+	}
+
+
+
 	try {		
 		let minerError;
 		for (let i = 0; i < coinsArr.length; i++) {
@@ -42,24 +58,21 @@ async function main() {
 				let coin = coinsArr[i]
 				
 				// Closing the already running miner
-				var screenName = await ifexist(gpuType, "start")
+				let screenName = await ifexist(gpuType, "start")
 				if (screenName) {
 					cp.execSync(`kill ${screenName}`)
 				}
-
-				// Get all the coin informations
-				let coinInfo = await info
 				
 				// Get the miner informations
-				let minerJS = require('../Miners/' + coinInfo[gpuType]["Coin Info"]["miner"] + '/miner.js')
-				let minerInfo = await minerJS(coinInfo, gpuType)
+				let minerJS = require('../Miners/' + json[gpuType]["Coin Info"]["miner"] + '/miner.js')
+				let minerInfo = await minerJS(json, gpuType)
 				// console.log(minerInfo)
 
-				coinInfo[gpuType]["Coin Info"]["env"] = minerInfo["Environment"]
-				coinInfo[gpuType]["Coin Info"]["command"] = minerInfo["Generated Command"]
+				json[gpuType]["Coin Info"]["env"] = minerInfo["Environment"]
+				json[gpuType]["Coin Info"]["command"] = minerInfo["Generated Command"]
 
 				// Show the UI
-				await showUI(gpuType, coin, coinInfo, "main")
+				await showUI(gpuType, coin, json, "main")
 				
 				// Deleting the old logs
 				if (fs.existsSync(`/home/chosn/Logs/screenlog.${i}`)) {
@@ -67,7 +80,7 @@ async function main() {
 				}
 
 				// Get the final command line to run the miner
-				let finalCommand = await run(coinInfo, gpuType)
+				let finalCommand = await run(json, gpuType)
 				//console.log(finalCommand)
 				cp.execSync(finalCommand)
 
@@ -75,98 +88,78 @@ async function main() {
 				// 1) Check if the screen as been created 
 				screenExist = await ifexist(gpuType, "main")
 
-				// 2) Check for any error in the miner app
-					// Decided it was WatchDog's Job
-				//minerError = await checkError(gpuType)
-
 				// Serving the pill
 				if (gpuType == "NVIDIA" && !minerError && !ifexist("ethpill", "start")) {
-					let finalPill = await servingPill()
+					let finalPill = await servingPill(pillGpu)
 					if (finalPill) cp.execSync(finalPill)
 				}
 
 				// Running TmuxVanity
-				if (!minerError) {
-					cp.execSync("/home/chosn/CHOSN/TmuxVanity")
-				}
+				// if (!minerError) {
+				// 	cp.execSync("/home/chosn/CHOSN/TmuxVanity")
+				// }
 			}
 		}
 	} catch(err) {
 		console.error("Threw error", err.stack)
 	}
-}
+	return coinsJson
 
-main()
-
-// functions
 	// Show the ui
-function showUI(gpuType, coin, coinInfo, section) {
-	if (section == "main") {
-		if (gpuType == "Nvidia") console.log(chalk.whiteBright('**********') + chalk.greenBright(' NVIDIA ') + chalk.whiteBright('**********'))
-		if (gpuType == "Amd") console.log(chalk.whiteBright('************') + chalk.redBright(' AMD ') + chalk.whiteBright('***********'))
-		if (gpuType == "Cpu") console.log(chalk.whiteBright('************') + chalk.blueBright(' CPU ') + chalk.whiteBright('***********'))
-		console.log(chalk.whiteBright('Coin : ') + chalk.yellowBright(coinInfo[gpuType]["Coin"]))
-		console.log(chalk.whiteBright('Algo : ') + chalk.yellowBright(coinInfo[gpuType]["Algo"]))
-		console.log(chalk.whiteBright('Miner : ') + chalk.yellowBright(coinInfo[gpuType]["Coin Info"]["miner"]))
-		console.log(chalk.whiteBright('Command : ') + chalk.yellowBright(coinInfo[gpuType]["Coin Info"]["command"]))
-		if (gpuType == "Nvidia") console.log(chalk.whiteBright('*******') + chalk.greenBright(' End of NVIDIA ') + chalk.whiteBright('*******'))
-		if (gpuType == "Amd") console.log(chalk.whiteBright('*********') + chalk.redBright(' End of AMD ') + chalk.whiteBright('********'))
-		if (gpuType == "Cpu") console.log(chalk.whiteBright('*********') + chalk.blueBright(' End of CPU ') + chalk.whiteBright('********'))
+	function showUI(gpuType, coin, json, section) {
+		if (section == "main") {
+			coinsJson["Coins"][gpuType]["Coin"] = json[gpuType]["Coin"]
+			coinsJson["Coins"][gpuType]["Algo"] = json[gpuType]["Algo"]
+			coinsJson["Coins"][gpuType]["Miner"] = json[gpuType]["Coin Info"]["miner"]
+			coinsJson["Coins"][gpuType]["Command"] = json[gpuType]["Coin Info"]["command"]
+		}
 	}
-}
 
 	// Run the command line
-function run(coinInfo, gpuType, screen = '', screenRcm = '') {
-	if (gpuType == "Nvidia"){
-		screen = "miner_nvidia"
-		screenRcm = "../Logs/miner_nvidia.txt"
-		screenRcmBck = "../Logs/backups/miner_nvidia.txt"
-	} else if (gpuType == "Amd") {
-		screen = "miner_amd" 
-		screenRcm = "../Logs/miner_amd.txt"
-		screenRcmBck = "../Logs/backups/miner_amd.txt"
-	} else {
-		screen = "miner_cpu"
-		screenRcm = "../Logs/miner_cpu.txt"
-		screenRcmBck = "../Logs/backups/miner_cpu.txt"
-	}
+	function run(json, gpuType) {
+		let screenRcm = ''
 
-	if (fs.existsSync(screenRcm)) {
-		cp.execSync(`mv ${screenRcm} ${screenRcmBck}.bck`)
-		cp.execSync(`touch ${screenRcm}`)
-	}
+		if (gpuType == "Nvidia"){
+			processName = "minerNvidia"
+			screenRcm = "../Logs/miner_nvidia.txt"
+			screenRcmBck = "../Logs/backups/miner_nvidia.txt"
+		} else if (gpuType == "Amd") {
+			processName = "minerAmd"
+			screenRcm = "../Logs/miner_amd.txt"
+			screenRcmBck = "../Logs/backups/miner_amd.txt"
+		} else {
+			processName = "minerCpu"
+			screenRcm = "../Logs/miner_cpu.txt"
+			screenRcmBck = "../Logs/backups/miner_cpu.txt"
+		}
 
-	return "screen -L -Logfile " + screenRcm + " -dmSL " + screen + " " + coinInfo[gpuType]["Coin Info"]["command"]
-}
+		if (fs.existsSync(screenRcm)) {
+			fs.rename(screenRcm, screenRcmBck, function (err) {
+				if (err) throw err;
+			});
+		}
+
+		return `screen -L -Logfile ${screenRcm} -dmS ${processName} ${json[gpuType]["Coin Info"]["command"]}`
+	}
 
 	// Check if the screen as been created
-function ifexist(gpuType, section) {
-	screenName = gpuType == "Nvidia" ? 'miner_nvidia' : gpuType == "Amd" ? 'miner_amd' : gpuType == "ethpill" ? 'ethpill' : 'miner_cpu'
- 	let screenOutput
-	try {
-	  screenOutput = cp.execSync(`screen -ls ${screenName}`).toString().trim().split("\n")[1].trim().split('.')[0]
-	} catch (ex) {
-	  if (section !== "start") console.log(chalk.redBright("Error, trying to fix the issue automatically"))
-	  return
+	function ifexist(gpuType, section) {
+		screenName = gpuType == "Nvidia" ? 'minerNvidia' : gpuType == "Amd" ? 'minerAmd' : gpuType == "ethpill" ? 'ethpill' : 'minerCpu'
+		let screenOutput
+		try {
+			screenOutput = cp.execSync(`screen -ls ${screenName}`).toString().trim().split("\n")[1].trim().split('.')[0]
+		} catch (ex) {
+			if (section !== "start") console.log(chalk.redBright("Error, trying to fix the issue automatically"))
+			return
+		}
+		return screenOutput
 	}
-	return screenOutput
-}
 
 	// Serving the Pill
-function servingPill() {
-	if (!pill.toLowerCase() == "yes" || !pillGpu) {
-		return
+	function servingPill(pillGpu) {
+		if (pillGpu) {
+			console.log(chalk.whiteBright("Serving the pill..."))
+			return "screen -dmS ethpill sudo /opt/EthPill/OhGodAnETHlargementPill-r2"
+		}
 	}
-	console.log(chalk.whiteBright("Serving the pill..."))
-	return "screen -dmS ethpill sudo /opt/EthPill/OhGodAnETHlargementPill-r2"
-}
-
-	// Miscelenuous
-	  // Timer
-async function sleep(ms) {
-	return new Promise(function(resolve, reject) {
-		setTimeout(function(){
-			resolve()
-		}, ms)
-	})
 }
