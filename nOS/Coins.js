@@ -1,10 +1,10 @@
 module.exports = async function(json) {
 	// Dependancies
-	const fs = require('fs')
-	const cp = require('child_process')
+	const fs = require('fs');
+	const cp = require('child_process');
 
 	// Configs Files Parser
-	const systemConfig = require('../SystemConfig.json')
+	const systemConfig = require('../SystemConfig.json');
 
 	let coinsJson = {
 		"Coins": {
@@ -158,3 +158,5 @@ module.exports = async function(json) {
 		}
 	}
 }
+
+

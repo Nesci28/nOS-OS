@@ -150,14 +150,14 @@ module.exports = function(stdout) {
 	async function getHashrate(brand, miner) {
 		let minerRunning = undefined
 		try {
-			minerRunning = cp.execSync('screen -ls | grep ' + miner)
+			minerRunning = cp.execSync('screen -ls | grep miner' + brand)
 		} catch {}
-			// run the getHashrate for that miner
+		// run the getHashrate for that miner
 		if (minerRunning) {
-			let hashrate = await cp.execSync('node ../Miners/' + miner + '/getHashrate.js')
+			let hashrate = require('../Miners/' + miner + '/getHashrate.js')
 			json[brand]["Total Hashrate"] = hashrate["Total Hashrate"]
 			
-			for (let i = 0; i < json[brand]["Hashrate"].length; i++) {
+			for (let i = 0; i < hashrate["Hashrate"].length; i++) {
 				json[brand]["GPU"][i.toString()]["Hashrate"] = hashrate["Hashrate"][i]
 			}
 		}

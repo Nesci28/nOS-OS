@@ -13,27 +13,29 @@ module.exports = async function(json, step) {
     }
   };
 
-  let wattCommand = ''
-  if (step == "init") {
-    if (json.Nvidia.GPU.length > 0) wattCommand = initialize(json, json.Nvidia.GPU.length, "Nvidia")
-    if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
 
-    if (json.Amd.GPU.length > 0) wattCommand = initialize(json, json.Amd.GPU.length, "Amd")
-    if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
-  }
+  return (async () => {
+    let wattCommand = ''
+    if (step == "init") {
+      if (json.Nvidia.GPU.length > 0) wattCommand = await initialize(json, json.Nvidia.GPU.length, "Nvidia")
+      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
 
-  if (step !== "init") {
-    if (json.Nvidia.GPU.length > 0) wattCommand = checkCurrent(json, json.Nvidia.GPU.length, "Nvidia")
-    if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
+      if (json.Amd.GPU.length > 0) wattCommand = await initialize(json, json.Amd.GPU.length, "Amd")
+      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
+    }
 
-    if (json.Amd.GPU.length > 0) wattCommand = checkCurrent(json, json.Amd.GPU.length, "Amd")
-    if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
-  }
+    if (step !== "init") {
+      if (json.Nvidia.GPU.length > 0) wattCommand = await checkCurrent(json, json.Nvidia.GPU.length, "Nvidia")
+      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
 
-  return powerStatus
+      if (json.Amd.GPU.length > 0) wattCommand = await checkCurrent(json, json.Amd.GPU.length, "Amd")
+      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
+    }
 
+    return powerStatus
+  })();
 
-  function initialize(json, gpuNumber, brand) {
+  async function initialize(json, gpuNumber, brand) {
     let maxPower = ocSettings[brand]["Powerlevel_%"]
     let initCommand = ''
     let nextWatt
@@ -75,14 +77,15 @@ module.exports = async function(json, step) {
   function checkCurrent(json, gpuNumber, brand) {
     let maxFanSpeed = ocSettings[brand]["Max FanSpeed"]
     let ocSettingserature = ocSettings[brand]["Max Temperature"] + 3
-    let nextWatt = json[brand]["GPU"]["Watt"] - 5
     let wattCommand = ''
+    let nextWatt
 
-    for (let i = 0; i < gpuNumber; i++) {
+    for (var i = 0; i < gpuNumber; i++) {
       let currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"]
       let currentTemp = json[brand]["GPU"][i]["Temperature"]
       
       if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingserature) {
+        nextWatt = json[brand]["GPU"][i]["Watt"] - 5
         if (brand == "Nvidia") {
           if (wattCommand = '') wattCommand += 'nvidia-smi'
           wattCommand += `-i ${i} -pl ${nextWatt}`
@@ -92,8 +95,9 @@ module.exports = async function(json, step) {
           if (wattCommand = '') wattCommand += 'rocm-smi'
           wattCommand += `-d ${i} --setpoweroverdrive ${nextWatt}`
         }
-        powerStatus[brand][i] = nextWatt
       }
+      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
+      else powerStatus["Power"][brand][i] = json[brand]["GPU"][i]["Watt"]
     }
   
     return wattCommand

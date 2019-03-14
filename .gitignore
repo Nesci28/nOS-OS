@@ -25,3 +25,5 @@ Logs/*.txt
 test**
 Pictures/
 .nvidia-settings-rc
+.dbshell
+.mongorc.js

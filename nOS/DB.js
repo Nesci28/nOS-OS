@@ -1,9 +1,16 @@
 module.exports = async function(json) {
 	// dependencies
+	const fs = require('fs');
 	const monk = require('monk')
+	const Cryptr = require('cryptr');
+	const cryptr = new Cryptr('012idontreallygiveashit012');
+	
 
 	// DB setup
-	const db = monk('nesci:012Webserver@ds153495.mlab.com:53495/webserver');
+	let dotenv = fs.readFileSync('./helpers/.dotenv').toString()
+	dotenv = JSON.parse(cryptr.decrypt(dotenv));
+
+	const db = monk(`${dotenv.User}:${dotenv.Pass}@${dotenv.Host}`)
 	const webserver = db.get('rigsInfo')
 
 	// Exporting DB information
