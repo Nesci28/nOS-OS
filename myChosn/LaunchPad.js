@@ -40,35 +40,35 @@ async function launchPad() {
   let power = await powerControl(json, process.argv[process.argv.length - 1])
   console.log(power)
 
-  // let temperature = await tempControl(json, process.argv[process.argv.length - 1])
-  // console.log(temperature)
+  let temperature = await tempControl(json, process.argv[process.argv.length - 1])
+  console.log(temperature)
 
-  // let coin = await coins(json)
-  // console.log(coin)
+  let coin = await coins(json)
+  console.log(coin)
 
-  // let watch = await watchdog(json, process.argv[process.argv.length - 1])
-  // console.log(watch)
+  let watch = await watchdog(json, process.argv[process.argv.length - 1])
+  console.log(watch)
 
-  // let database = await DB(json)
-  // console.log(database)
+  let database = await DB(json)
+  console.log(database)
 
-  // setInterval(async () => {
-  //   process.stdout.write('\033c');
-  //   json = await info()
-  // }, 10000)
+  setInterval(async () => {
+    process.stdout.write('\033c');
+    json = await info()
+  }, 10000)
 
-  // setInterval(async () => {
-  //   let temperature = await tempControl(json)
-  //   console.log(temperature)
-  // }, 10001)
+  setInterval(async () => {
+    let temperature = await tempControl(json)
+    console.log(temperature)
+  }, 10001)
 
-  // setInterval(async () => {
-  //   let watch = await watchdog(json)
-  //   console.log(watch)
-  // }, 10002)
+  setInterval(async () => {
+    let watch = await watchdog(json)
+    console.log(watch)
+  }, 10002)
 
-  // setInterval(async () => {
-  //   let database = await DB(json)
-  //   console.log(database)
-  // }, 10003)
+  setInterval(async () => {
+    let database = await DB(json)
+    console.log(database)
+  }, 10003)
 }
