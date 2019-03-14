@@ -2,6 +2,7 @@ const cp = require('child_process');
 
 const info = require('./getInfo.js');
 const powerControl = require('./PowerController.js');
+const ocControl = require('./OverclocksController.js');
 const tempControl = require('./TemperatureController.js');
 const coins = require('./Coins.js');
 const watchdog = require('./WatchDog.js');
@@ -15,6 +16,9 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 
     let temperature = await tempControl(json, "stop")
     console.log(temperature)
+
+    let overclocks = await ocControl(json, "stop")
+    console.log(overclocks)
 
     for (let name of minerName) {
       try {
@@ -40,6 +44,9 @@ async function launchPad() {
   let power = await powerControl(json, process.argv[process.argv.length - 1])
   console.log(power)
 
+  let overclocks = await ocControl(json, process.argv[process.argv.length - 1])
+  console.log(overclocks)
+
   let temperature = await tempControl(json, process.argv[process.argv.length - 1])
   console.log(temperature)
 
@@ -55,20 +62,29 @@ async function launchPad() {
   setInterval(async () => {
     process.stdout.write('\033c');
     json = await info()
-  }, 10000)
+  }, 15000)
+
+  setInterval(async () => {
+    let power = await powerControl(json)
+    console.log(power)
+  }, 15100)
+
+  setInterval(async () => {
+    console.log(overclocks)
+  }, 15200)
 
   setInterval(async () => {
     let temperature = await tempControl(json)
     console.log(temperature)
-  }, 10001)
+  }, 15300)
 
   setInterval(async () => {
     let watch = await watchdog(json)
     console.log(watch)
-  }, 10002)
+  }, 15400)
 
   setInterval(async () => {
     let database = await DB(json)
     console.log(database)
-  }, 10003)
+  }, 15500)
 }

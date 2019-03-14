@@ -3,11 +3,9 @@
     "Max Temperature": 69,
     "Max FanSpeed": 95,
     "Use Hive_OC": true,
-    "Powerlevel_%": 70,
-    "Min CoreClock": "0",
-    "Max CoreClock": "100",
-    "Min MemClock": "250",
-    "Max MemClock": "500"
+    "Powerlevel_%": null,
+    "CoreClock": null,
+    "MemClock": null
   },
   "Amd": {
     "Max Temperature": 60,

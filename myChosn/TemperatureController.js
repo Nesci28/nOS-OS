@@ -3,13 +3,13 @@ module.exports = async function(json, step) {
   const cp = require('child_process');
 
   // Setup
-  const maxTemp = require('../Overclocks.json');
+  const ocSettings = require('../Overclocks.json');
 
   // Exporting watchdog result
   let temperatureStatus = {
     "Temperature": {
-      "Nvidia": null,
-      "Amd": null
+      "Nvidia": [],
+      "Amd": []
     }
   };
 
@@ -75,9 +75,9 @@ module.exports = async function(json, step) {
 
     function getGPUTemp(infos, brand) {
       let fanCommand = ''
-      maxTemperature = maxTemp[brand]["Max Temperature"] + 3
-      minTemperature = maxTemp[brand]["Max Temperature"] - 3
-      maxFanSpeed = maxTemp[brand]["Max FanSpeed"]
+      ocSettingserature = ocSettings[brand]["Max Temperature"] + 3
+      minTemperature = ocSettings[brand]["Max Temperature"] - 3
+      maxFanSpeed = ocSettings[brand]["Max FanSpeed"]
 
       gpuTemperature = []
 
@@ -97,7 +97,7 @@ module.exports = async function(json, step) {
               gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed - 5)
             }
           }
-        } else if (infos[brand]["GPU"][i.toString()]["Temperature"] > maxTemperature) {
+        } else if (infos[brand]["GPU"][i.toString()]["Temperature"] > ocSettingserature) {
           if (currentFanSpeed <= maxFanSpeed - 5) {
             if (i == 0 && brand == "Nvidia") fanCommand += 'nvidia-settings '
             if (brand == "Nvidia") {
@@ -111,8 +111,8 @@ module.exports = async function(json, step) {
             }
           }
         }
+        temperatureStatus["Temperature"][brand][i] = [gpuTemperature]
       }
-      temperatureStatus["Temperature"][brand] = [gpuTemperature, nextWatt]
       return fanCommand
     }
   }
