@@ -2,7 +2,7 @@ const { exec } = require('child_process');
 
 const getGPUStats = async () => {
   return new Promise(function(resolve, reject) {
-    exec('nvidia-smi --format=noheader,csv --query-gpu=utilization.gpu,clocks.sm,clocks.mem,temperature.gpu,power.draw,fan.speed,pci.sub_device_id,name,uuid,clocks.max.gr,clocks.max.mem', (err, stdout, stderr) => {
+    exec('nvidia-smi --format=noheader,csv --query-gpu=utilization.gpu,clocks.sm,clocks.mem,temperature.gpu,power.draw,fan.speed,pci.sub_device_id,name,uuid,clocks.max.gr,clocks.max.mem,power.min_limit,power.max_limit', (err, stdout, stderr) => {
       if (err) return reject(err);
       resolve(stdout);
     });

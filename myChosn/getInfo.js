@@ -2,6 +2,8 @@ module.exports = function(stdout) {
 	// Dependancies
 	const cp = require('child_process')
 	const ip = require('ip')
+	const readLastLine = require('read-last-line');
+	const fs = require('fs');
 
 	const nvidiaGPU = require('./helpers/gpu.js')
 	const amdGPU = require('./helpers/amd_rocm_parser.js')
@@ -32,7 +34,8 @@ module.exports = function(stdout) {
 			"Total Hashrate": null,
 			"Avg Temperature": null,
 			"Coin Info": {},
-			"GPU": {}
+			"GPU": {},
+			"Miner Log": null
 		},
 		"Amd": {
 			"Coin": null,
@@ -40,14 +43,16 @@ module.exports = function(stdout) {
 			"Total Hashrate": null,
 			"Avg Temperature": null,
 			"Coin Info": {},
-			"GPU": {}
+			"GPU": {},
+			"Miner Log": null
 		},
 		"CPU": {
 			"Coins": null,
 			"Algo": null,
 			"Total Hashrate": null,
 			"Coin Info": {},
-			"GPU": {}
+			"GPU": {},
+			"Miner Log": null
 		},
 		"System Config": systemConfig,
 		"Coins Config": coinsConfig,
@@ -65,16 +70,20 @@ module.exports = function(stdout) {
 			await getCoins('Nvidia')
 			await getGPU('Nvidia')
 			await getHashrate('Nvidia', json['Nvidia']['Coin Info']['miner'])
+			json["Nvidia"]["Miner Log"] = await getMinerLog('Nvidia')
 		}
 		if (systemConfig["Amd Coin"] && setType[1]) {
 			await getCoins('Amd')
 			await getGPU('Amd')
 			await getHashrate('Amd', json['Amd']['Coin Info']['miner'])
+			json["Amd"]["Miner Log"] = await getMinerLog('Amd')
 		}
 		if (systemConfig["Cpu Coin"] && setType[2]) {
 			await getCoins('Cpu')
 			await getGPU('Cpu')
 			await getHashrate('Cpu')
+			await getMinerLog('Cpu')
+			json["Cpu"]["Miner Log"] = await getMinerLog('Cpu')
 		}
 
 		// console.log(json)
@@ -102,6 +111,8 @@ module.exports = function(stdout) {
 					gpuObject["Max Mem"] = gpu[10]
 					gpuObject["Temperature"] = gpu[3]
 					gpuObject["Watt"] = gpu[4]
+					gpuObject["Min Watt"] = gpu[11]
+					gpuObject["Max Watt"] = gpu[12]
 					gpuObject["Fan Speed"] = gpu[5]
 					gpuObject["Name"] = gpu[7]	
 					json["Nvidia"]["GPU"].push(gpuObject)
@@ -165,6 +176,8 @@ module.exports = function(stdout) {
 			"Max Mem": null,
 			"Temperature": null,
 			"Watt": null,
+			"Min Watt": null,
+			"Max Watt": null,
 			"Fan Speed": null,
 			"Name": null,
 			"Hashrate": null
@@ -199,5 +212,15 @@ module.exports = function(stdout) {
 
 		// Generating the stuff to launch the miner
 		let minerInfo = require('../Miners/' + json[gpuType]["Coin Info"]["miner"] + '/miner.js')
+	}
+
+	async function getMinerLog(brand) {
+		if (fs.existsSync(`../Logs/miner${brand}.txt`)) {
+			return readLastLine.read(`../Logs/miner${brand}.txt`, 75).then(function (lines) {
+				return lines
+			}).catch(function (err) {
+				console.log(err.message);
+			});
+		}
 	}
 }

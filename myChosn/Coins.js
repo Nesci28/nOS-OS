@@ -73,11 +73,6 @@ module.exports = async function(json) {
 
 				// Show the UI
 				await showUI(gpuType, coin, json, "main")
-				
-				// Deleting the old logs
-				if (fs.existsSync(`/home/chosn/Logs/screenlog.${i}`)) {
-					cp.execSync(`mv /home/chosn/Logs/screenlog.${i} /home/chosn/backups/screenlog.${i}_bck`)
-				}
 
 				// Get the final command line to run the miner
 				let finalCommand = await run(json, gpuType)
@@ -121,16 +116,16 @@ module.exports = async function(json) {
 
 		if (gpuType == "Nvidia"){
 			processName = "minerNvidia"
-			screenRcm = "../Logs/miner_nvidia.txt"
-			screenRcmBck = "../Logs/backups/miner_nvidia.txt"
+			screenRcm = "../Logs/minerNvidia.txt"
+			screenRcmBck = "../Logs/backups/minerNvidia.txt"
 		} else if (gpuType == "Amd") {
 			processName = "minerAmd"
-			screenRcm = "../Logs/miner_amd.txt"
-			screenRcmBck = "../Logs/backups/miner_amd.txt"
+			screenRcm = "../Logs/minerAmd.txt"
+			screenRcmBck = "../Logs/backups/minerAmd.txt"
 		} else {
 			processName = "minerCpu"
-			screenRcm = "../Logs/miner_cpu.txt"
-			screenRcmBck = "../Logs/backups/miner_cpu.txt"
+			screenRcm = "../Logs/minerCpu.txt"
+			screenRcmBck = "../Logs/backups/minerCpu.txt"
 		}
 
 		if (fs.existsSync(screenRcm)) {

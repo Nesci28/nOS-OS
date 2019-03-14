@@ -73,11 +73,11 @@ module.exports = async function(json, step) {
           if (temperature[i] == 3) {
             restart("maxTemp")
           } else {
-            watchdogStatus[brand]["Temperature"] = false
+            watchdogStatus["Watchdog"][brand]["Temperature"] = false
           }
         }
       }
-      watchdogStatus[brand]["Temperature"] = true
+      watchdogStatus["Watchdog"][brand]["Temperature"] = true
     }
   }
 
@@ -102,11 +102,11 @@ module.exports = async function(json, step) {
           if (memClock[i] == 3) {
             restart("memClock")
           } else {
-            watchdogStatus[brand]["Mem"] = false
+            watchdogStatus["Watchdog"][brand]["Mem"] = false
           }
         }
       }
-      watchdogStatus[brand]["Mem"] = true
+      watchdogStatus["Watchdog"][brand]["Mem"] = true
     }
   }
 
@@ -131,11 +131,11 @@ module.exports = async function(json, step) {
           if (coreClock[i] == 3) {
             restart("coreClock")
           } else {
-            watchdogStatus[brand]["Core"] = false
+            watchdogStatus["Watchdog"][brand]["Core"] = false
           }
         }
       }
-      watchdogStatus[brand]["Core"] = true
+      watchdogStatus["Watchdog"][brand]["Core"] = true
     }
   }
 
@@ -161,11 +161,11 @@ module.exports = async function(json, step) {
           if (utilization[i] == 3) {
             restart("utils", i)
           } else {
-            watchdogStatus[brand]["Utilization"] = false
+            watchdogStatus["Watchdog"][brand]["Utilization"] = false
           }
         }
       }
-      watchdogStatus[brand]["Utilization"] = true
+      watchdogStatus["Watchdog"][brand]["Utilization"] = true
     }
   }
 

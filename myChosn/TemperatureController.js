@@ -70,45 +70,49 @@ module.exports = async function(json, step) {
     }
     if (infos["Amd"]["GPU"].length > 0) {
       let fanCommand = getGPUTemp(infos, "Amd")
-      if (fanCommand) cp.execSync('sudo ' + fanCommand.trim())
+      if (fanCommand.fanCommand) cp.execSync('sudo ' + fanCommand.fanCommand.trim())
     }
 
     function getGPUTemp(infos, brand) {
       let fanCommand = ''
       maxTemperature = maxTemp[brand]["Max Temperature"] + 3
       minTemperature = maxTemp[brand]["Max Temperature"] - 3
+      maxFanSpeed = maxTemp[brand]["Max FanSpeed"]
+
       gpuTemperature = []
 
       for (let i = 0; i < infos[brand]["GPU"].length; i++) {
         currentFanSpeed = Number(infos[brand]["GPU"][i.toString()]["Fan Speed"].split(' ')[0])
         
         if (infos[brand]["GPU"][i.toString()]["Temperature"] < minTemperature) {
-          if (i == 0 && brand == "Nvidia") fanCommand += 'nvidia-settings '
-          if (brand == "Nvidia") {
-            fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed - 5} `
-            gpuTemperature.push(currentFanSpeed - 5)
+          if (currentFanSpeed >= 21) { 
+            if (i == 0 && brand == "Nvidia") fanCommand += 'nvidia-settings '
+            if (brand == "Nvidia") {
+              fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed - 5} `
+              gpuTemperature[i] = currentFanSpeed - 5
+            }
+            if (i == 0 && brand == "Amd") fanCommand += 'rocm-smi '
+            if (brand == "Amd") {
+              fanCommand += `-d +{i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed - 5)} `
+              gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed - 5)
+            }
           }
-        
-          if (i == 0 && brand == "Amd") fanCommand += 'rocm-smi '
-          if (brand == "Amd") {
-            fanCommand += `-d +{i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed - 5)} `
-            gpuTemperature.push(amdFanSpeedConvertFrom(currentFanSpeed - 5))
-          }
-
         } else if (infos[brand]["GPU"][i.toString()]["Temperature"] > maxTemperature) {
-          if (i == 0 && brand == "Nvidia") fanCommand += 'nvidia-settings '
-          if (brand == "Nvidia") {
-            fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed + 5} `
-            gpuTemperature.push(currentFanSpeed + 5)
-          }
-          if (i == 0 && brand == "Amd") fanCommand += 'rocm-smi '
-          if (brand == "Amd") {
-            fanCommand += `-d +{i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)} `
-            gpuTemperature.push(amdFanSpeedConvertFrom(currentFanSpeed + 5))
+          if (currentFanSpeed <= maxFanSpeed - 5) {
+            if (i == 0 && brand == "Nvidia") fanCommand += 'nvidia-settings '
+            if (brand == "Nvidia") {
+              fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed + 5} `
+              gpuTemperature[i] = currentFanSpeed + 5
+            }
+            if (i == 0 && brand == "Amd") fanCommand += 'rocm-smi '
+            if (brand == "Amd") {
+              fanCommand += `-d +{i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)} `
+              gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed + 5)
+            }
           }
         }
       }
-      temperatureStatus["Temperature"][brand] = gpuTemperature
+      temperatureStatus["Temperature"][brand] = [gpuTemperature, nextWatt]
       return fanCommand
     }
   }
