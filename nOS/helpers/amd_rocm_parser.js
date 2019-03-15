@@ -21,9 +21,10 @@ module.exports = function(stdout) {
         pwr: parseFloat(toks[2]),
         sclock: parseInt(toks[3]),
         mclock: parseInt(toks[4]),
-        fan: parseFloat(toks[5]),
-        perf: toks[6],
-        sclockod: parseFloat(toks[7])
+        fan: parseFloat(toks[7]),
+        perf: toks[8],
+        sclockod: parseFloat(toks[10]),
+        utilization: parseInt(toks[12])
       }
       temps+=gpu.temp;
       totalPower+=gpu.pwr;
@@ -56,6 +57,14 @@ console.log(module.exports(`
   0   31.0c   53.126W  1340Mhz  300Mhz   29.8%    manual    0%
 ================================================================================
 ====================           End of ROCm SMI Log          ====================
+
+========================        ROCm System Management Interface        ========================
+================================================================================================
+GPU   Temp   AvgPwr   SCLK    MCLK    PCLK           Fan     Perf    PwrCap   SCLK OD   MCLK OD  GPU%
+0     27.0c  32.192W  613Mhz  300Mhz  N/A            42.75%  auto    114.0W   0%        0%       0%       
+1     25.0c  28.102W  300Mhz  300Mhz  2.5GT/s, x8    23.92%  auto    114.0W   0%        0%       0%       
+================================================================================================
+========================               End of ROCm SMI Log              ========================
 
 
 `))

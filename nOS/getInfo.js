@@ -92,7 +92,7 @@ module.exports = function(stdout) {
 
 	async function getCoins(brand) {
 		json[brand]["Coin"] = systemConfig[brand + " Coin"]
-		json[brand]["Algo"] = coinsConfig[json[brand]["Coin"]]["Algo"]
+		json[brand]["Algo"] = coinsConfig[brand][json[brand]["Coin"]]["Algo"]
 		await getCoinInfo(json[brand]["Coin"], json[brand]["Algo"], brand)
 	}
 
@@ -122,17 +122,17 @@ module.exports = function(stdout) {
 				
 		if (brand == "Amd") {
 			json["Amd"]["GPU"] = []
-			let amdRocm = cp.execSync('/opt/ROC-smi/rocm-smi');
+			let amdRocm = cp.execSync('./helpers/ROC-smi/rocm-smi');
 			let amdStats = amdGPU(amdRocm.toString())
 			for (let i = 0; i < amdStats["gpus"].length; i++) {
 				let gpuObject = clearVars()
-				gpuObject["Utilization"] = amdStats["gpus"][i]["perf"]
+				gpuObject["Utilization"] = amdStats["gpus"][i]["utilization"]
 				gpuObject["Core Clock"] = amdStats["gpus"][i]["sclock"]
 				gpuObject["Mem Clock"] = amdStats["gpus"][i]["mclock"]
 				gpuObject["Temperature"] = amdStats["gpus"][i]["temp"]
 				gpuObject["Watt"] = amdStats["gpus"][i]["pwr"]
 				gpuObject["Fan Speed"] = amdStats["gpus"][i]["fan"]
-				gpuObject["Name"] = amdStats["gpus"][i][7]	
+				// gpuObject["Name"] = amdStats["gpus"][i][7]
 				json["Amd"]["GPU"].push(gpuObject)
 			}
 		}
@@ -155,6 +155,7 @@ module.exports = function(stdout) {
 		// run the getHashrate for that miner
 		if (minerRunning) {
 			let hashrate = require('../Miners/' + miner + '/getHashrate.js')
+			hashrate = await hashrate()
 			json[brand]["Total Hashrate"] = hashrate["Total Hashrate"]
 			
 			for (let i = 0; i < hashrate["Hashrate"].length; i++) {
@@ -187,27 +188,27 @@ module.exports = function(stdout) {
 	}
 
 	function getCoinInfo(coin, algo, gpuType) {
-		json[gpuType]["Coin Info"]["opts"] = coinsConfig[coin]["Options"]
-		json[gpuType]["Coin Info"]["wallet"] = coinsConfig[coin]["Wallet"]
-		json[gpuType]["Coin Info"]["miner"] = coinsConfig[coin]["Miner"]
+		json[gpuType]["Coin Info"]["opts"] = coinsConfig[gpuType][coin]["Options"]
+		json[gpuType]["Coin Info"]["wallet"] = coinsConfig[gpuType][coin]["Wallet"]
+		json[gpuType]["Coin Info"]["miner"] = coinsConfig[gpuType][coin]["Miner"]
 		
-		json[gpuType]["Coin Info"]["username1"] = coinsConfig[coin]["Username"]
-		json[gpuType]["Coin Info"]["worker1"] = coinsConfig[coin]["Worker"]
+		json[gpuType]["Coin Info"]["username1"] = coinsConfig[gpuType][coin]["Username"]
+		json[gpuType]["Coin Info"]["worker1"] = coinsConfig[gpuType][coin]["Worker"]
 		if (json[gpuType]["Coin Info"]["worker1"] && json[gpuType]["Coin Info"]["username1"]) json[gpuType]["Coin Info"]["account"] = json[gpuType]["Coin Info"]["username1"] + "." + json[gpuType]["Coin Info"]["worker1"]
-		json[gpuType]["Coin Info"]["pool1"] = coinsConfig[coin]["Pool"]
-		json[gpuType]["Coin Info"]["port1"] = coinsConfig[coin]["Port"]
+		json[gpuType]["Coin Info"]["pool1"] = coinsConfig[gpuType][coin]["Pool"]
+		json[gpuType]["Coin Info"]["port1"] = coinsConfig[gpuType][coin]["Port"]
 		json[gpuType]["Coin Info"]["poolUri1"] = "stratum\+tcp:\/\/" + json[gpuType]["Coin Info"]["pool1"] + ":" + json[gpuType]["Coin Info"]["port1"]
 		json[gpuType]["Coin Info"]["poolstratum1"] = json[gpuType]["Coin Info"]["pool1"] + ":" + json[gpuType]["Coin Info"]["port1"]
-		json[gpuType]["Coin Info"]["password1"] = coinsConfig[coin]["Password"]
+		json[gpuType]["Coin Info"]["password1"] = coinsConfig[gpuType][coin]["Password"]
 		
-		json[gpuType]["Coin Info"]["username2"] = coinsConfig[coin]["Alternative Username"]
-		json[gpuType]["Coin Info"]["worker2"] = coinsConfig[coin]["Alternative Worker"]
+		json[gpuType]["Coin Info"]["username2"] = coinsConfig[gpuType][coin]["Alternative Username"]
+		json[gpuType]["Coin Info"]["worker2"] = coinsConfig[gpuType][coin]["Alternative Worker"]
 		if (json[gpuType]["Coin Info"]["worker2"] && json[gpuType]["Coin Info"]["username2"]) json[gpuType]["Coin Info"]["account2"] = json[gpuType]["Coin Info"]["username2"] + "." + json[gpuType]["Coin Info"]["worker2"]
-		json[gpuType]["Coin Info"]["pool2"] = coinsConfig[coin]["Alternative Pool"]
-		json[gpuType]["Coin Info"]["port2"] = coinsConfig[coin]["Alternative Port"]
+		json[gpuType]["Coin Info"]["pool2"] = coinsConfig[gpuType][coin]["Alternative Pool"]
+		json[gpuType]["Coin Info"]["port2"] = coinsConfig[gpuType][coin]["Alternative Port"]
 		json[gpuType]["Coin Info"]["poolUri2"] = "stratum\+tcp:\/\/" + json[gpuType]["Coin Info"]["pool2"] + ":" + json[gpuType]["Coin Info"]["port2"]
 		json[gpuType]["Coin Info"]["poolstratum2"] = json[gpuType]["Coin Info"]["pool2"] + ":" + json[gpuType]["Coin Info"]["port2"]
-		json[gpuType]["Coin Info"]["password2"] = coinsConfig[coin]["Alternative Password"]
+		json[gpuType]["Coin Info"]["password2"] = coinsConfig[gpuType][coin]["Alternative Password"]
 
 
 		// Generating the stuff to launch the miner

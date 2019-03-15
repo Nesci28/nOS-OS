@@ -149,7 +149,12 @@ module.exports = async function(json, step) {
       
     function getGPUUtilization(infos, brand) {
       for (let i = 0; i < infos[brand]["GPU"].length; i++) {
-        let gpuUtils = infos[brand]["GPU"][i.toString()]["Utilization"].split(' ')[0]
+        if (brand == "Nvidia") {
+          var gpuUtils = infos[brand]["GPU"][i.toString()]["Utilization"].split(' ')[0]
+        }
+        if (brand == "Amd") {
+          var gpuUtils = infos[brand]["GPU"][i.toString()]["Utilization"].toString()
+        }
         if (gpuUtils > 90) {
           utilization[i] = 0
         } else {

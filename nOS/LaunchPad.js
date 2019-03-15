@@ -14,9 +14,11 @@ if (process.argv[process.argv.length - 1] == 'stop') {
   (async() => {
     let json = await info()
 
-    let overclocks = await ocControl(json, "stop")
-    console.log(overclocks)
-    
+    if (json.Nvidia.GPU.length > 0) {
+      let overclocks = await ocControl(json, "stop")
+      console.log(overclocks)
+    }
+
     let temperature = await tempControl(json, "stop")
     console.log(temperature)
 
@@ -49,7 +51,7 @@ async function launchPad(step, power, overclocks) {
     console.log(coin)
   }
   console.log(power)
-  console.log(overclocks)
+  if (overclocks !== undefined) console.log(overclocks)
 
   let temperature = await tempControl(json, step)
   console.log(temperature)
