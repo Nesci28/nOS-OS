@@ -18,15 +18,15 @@ module.exports = async function(json, step) {
     let wattCommand = ''
     if (step == "init") {
       if (json.Nvidia.GPU.length > 0) wattCommand = await initialize(json, json.Nvidia.GPU.length, "Nvidia")
-      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
+      // if (wattCommand !== '') cp.execSync(wattCommand)
 
       if (json.Amd.GPU.length > 0) wattCommand = await initialize(json, json.Amd.GPU.length, "Amd")
       if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
     }
 
-    if (step !== "init") {
+    if (step !== "init" && step !== "stop") {
       if (json.Nvidia.GPU.length > 0) wattCommand = await checkCurrent(json, json.Nvidia.GPU.length, "Nvidia")
-      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
+      if (wattCommand !== '') cp.execSync(wattCommand)
 
       if (json.Amd.GPU.length > 0) wattCommand = await checkCurrent(json, json.Amd.GPU.length, "Amd")
       if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
@@ -41,37 +41,38 @@ module.exports = async function(json, step) {
     let nextWatt
 
     for (let i = 0; i < gpuNumber; i++) {
-      if (ocSettings[brand]["Use Hive_OC"]) {
+      if (ocSettings[brand]["Use Hive_OC"]) {     
         let hiveOC = await ocHelper(json[brand]["GPU"][i].Name)
-
         if (brand == "Nvidia") {
-          if (i == 0) initCommand += 'nvidia-smi '
-          if (hiveOC.power_limit) initCommand += `-i ${i} -pl ${hiveOC.power_limit}`
+          if (hiveOC !== 'no DB') {
+            if (hiveOC.power_limit) initCommand += `sudo nvidia-smi -i ${i} -pl ${hiveOC.power_limit}; ` 
+            powerStatus["Power"][brand][i] = hiveOC.power_limit
+            nextWatt = hiveOC.power_limit
+          } else {
+            initCommand = defaultValues(json, maxPower, i, brand, initCommand)
+          }
+        } else {
+
+          // AMD
+
         }
-
-        // if (brand == "Amd") {
-
-        // }
-
-        powerStatus["Power"][brand][i] = hiveOC.power_limit
       } else {
-        let minWatt = json[brand]["GPU"][i]["Min Watt"].split(' ')[0]
-        let maxWatt = json[brand]["GPU"][i]["Max Watt"].split(' ')[0]
-        if (brand == "Nvidia") {
-          if (initCommand = '') initCommand += 'nvidia-smi '
-          nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 100 * (maxPower - 50))
-          initCommand += `-i ${i} -pl ${nextWatt}`;
-        }
-        
-        // if (brand == "Amd") {
-        //   if (initCommand = '') wattCommand += 'rocm-smi '
-        //   nextWatt = 'test'
-        // }
-        
-        powerStatus["Power"][brand][i] = nextWatt
+        initCommand = defaultValues(json, maxPower, brand, initCommand)
       }
+      powerStatus["Power"][brand][i] = nextWatt
     }
     return initCommand
+
+    function defaultValues(json, maxPower, i, brand, initCommand) {
+      let minWatt = json[brand]["GPU"][i]["Min Watt"].split(' ')[0]
+      let maxWatt = json[brand]["GPU"][i]["Max Watt"].split(' ')[0]
+      if (brand == "Nvidia") {
+        nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 100 * (maxPower - 50))
+        initCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
+      }
+
+      return initCommand
+    }
   }
 
   function checkCurrent(json, gpuNumber, brand) {
@@ -87,13 +88,13 @@ module.exports = async function(json, step) {
       if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingserature) {
         nextWatt = json[brand]["GPU"][i]["Watt"] - 5
         if (brand == "Nvidia") {
-          if (wattCommand = '') wattCommand += 'nvidia-smi'
-          wattCommand += `-i ${i} -pl ${nextWatt}`
+          if (wattCommand = '') wattCommand += ''
+          wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
         }
 
         if (brand == "Amd") {
-          if (wattCommand = '') wattCommand += 'rocm-smi'
-          wattCommand += `-d ${i} --setpoweroverdrive ${nextWatt}`
+          if (wattCommand = '') wattCommand += 'rocm-smi '
+          wattCommand += `-d ${i} --setpoweroverdrive ${nextWatt} `
         }
       }
       if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
