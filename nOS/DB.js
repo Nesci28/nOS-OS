@@ -1,4 +1,4 @@
-module.exports = async function(json) {
+module.exports = async function(json, existingDB = '') {
 	// dependencies
 	const fs = require('fs');
 	const monk = require('monk')
@@ -16,12 +16,17 @@ module.exports = async function(json) {
 	// Exporting DB information
 	let sendToDBStatus = {
 		"DB": {
-			"Status": null
+			"Status": null,
+			"Entry": null
 		}
 	};
 
-	let existingDB = await webserver.find({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]})
+
+	if (existingDB == '') {
+		existingDB = await webserver.find({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]})
+	}
 	checkForNewConfigs(existingDB)
+	sendToDBStatus["DB"]["Entry"] = existingDB
 	sendToDBStatus["DB"]["Status"] = await setID(existingDB, json).status
 	json = await setID(existingDB, json).json
 	

@@ -40,9 +40,9 @@ if (process.argv[process.argv.length - 1] !== 'stop') {
   })()
 }
 
-async function launchPad(step, power, overclocks) {
+async function launchPad(step, power, overclocks, database = '', json = '') {
   process.stdout.write('\033c');
-  let json = await info()
+  json = await info(step, json)
 
   if (step == 'init') {
     power = await powerControl(json, step)
@@ -59,11 +59,14 @@ async function launchPad(step, power, overclocks) {
   let watch = await watchdog(json, step)
   console.log(watch)
 
-  let database = await DB(json)
+  if (step !== "init") {
+    var existingDB = database.DB.Entry
+  }
+  database = await DB(json, existingDB)
   console.log(database)
 
   setTimeout(async () => {
-    await launchPad('running', power, overclocks)
+    await launchPad('running', power, overclocks, database, json)
   }, 15000)
 }
 

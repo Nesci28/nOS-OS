@@ -1,4 +1,4 @@
-module.exports = function(stdout) {
+module.exports = function(step, json = '') {
 	// Dependancies
 	const cp = require('child_process')
 	const ip = require('ip')
@@ -20,66 +20,69 @@ module.exports = function(stdout) {
 	if (/AMD/.test(lspci)) setType[1] = "AMD"
 	setType[2] = "CPU"
 
-	let json = {
-		"_id": null,
-		"New Time": new Date().getTime(),
-		"Old Time": null,
-		"Username": systemConfig["WebApp Username"],
-		"Password": systemConfig["WebApp Password"],
-		"Hostname" : systemConfig["Rig Hostname"],
-		"IP": ip.address(),
-		"Nvidia": {
-			"Coin": null,
-			"Algo": null,
-			"Total Hashrate": null,
-			"Avg Temperature": null,
-			"Coin Info": {},
-			"GPU": {},
-			"Miner Log": null
-		},
-		"Amd": {
-			"Coin": null,
-			"Algo": null,
-			"Total Hashrate": null,
-			"Avg Temperature": null,
-			"Coin Info": {},
-			"GPU": {},
-			"Miner Log": null
-		},
-		"CPU": {
-			"Coins": null,
-			"Algo": null,
-			"Total Hashrate": null,
-			"Coin Info": {},
-			"GPU": {},
-			"Miner Log": null
-		},
-		"System Config": systemConfig,
-		"Coins Config": coinsConfig,
-		"Overclocks Config": overclocksConfig
+	if (json == '') {
+		var json = {
+			"_id": null,
+			"New Time": new Date().getTime(),
+			"Old Time": null,
+			"Username": systemConfig["WebApp Username"],
+			"Password": systemConfig["WebApp Password"],
+			"Hostname" : systemConfig["Rig Hostname"],
+			"IP": ip.address(),
+			"Nvidia": {
+				"Coin": null,
+				"Algo": null,
+				"Total Hashrate": null,
+				"Avg Temperature": null,
+				"Coin Info": {},
+				"GPU": {},
+				"Miner Log": null
+			},
+			"Amd": {
+				"Coin": null,
+				"Algo": null,
+				"Total Hashrate": null,
+				"Avg Temperature": null,
+				"Coin Info": {},
+				"GPU": {},
+				"Miner Log": null
+			},
+			"CPU": {
+				"Coins": null,
+				"Algo": null,
+				"Total Hashrate": null,
+				"Coin Info": {},
+				"GPU": {},
+				"Miner Log": null
+			},
+			"System Config": systemConfig,
+			"Coins Config": coinsConfig,
+			"Overclocks Config": overclocksConfig
+		}
 	}
 
-	return main()
+	return main(step)
 
 	// main
-	async function main() {
+	async function main(step) {
 		json["Old Time"] = json["New Time"]
 		json["New Time"] = new Date().getTime()
 
 		if (systemConfig["Nvidia Coin"] && setType[0]) {
-			await getCoins('Nvidia')
+			console.log(step)
+			if (step == 'init') await getCoins('Nvidia')
 			await getGPU('Nvidia')
 			await getHashrate('Nvidia', json['Nvidia']['Coin Info']['miner'])
 			json["Nvidia"]["Miner Log"] = await getMinerLog('Nvidia')
 		}
 		if (systemConfig["Amd Coin"] && setType[1]) {
-			await getCoins('Amd')
+			if (step == 'init') await getCoins('Amd')
 			await getGPU('Amd')
 			await getHashrate('Amd', json['Amd']['Coin Info']['miner'])
 			json["Amd"]["Miner Log"] = await getMinerLog('Amd')
 		}
 		if (systemConfig["Cpu Coin"] && setType[2]) {
-			await getCoins('Cpu')
+			if (step == 'init') await getCoins('Cpu')
 			await getGPU('Cpu')
 			await getHashrate('Cpu')
 			await getMinerLog('Cpu')
