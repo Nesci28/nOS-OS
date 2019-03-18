@@ -81,6 +81,10 @@ Math.round(Number(90) + (217 - 90) / 100 * (70 - 50)) == 115 W
 ```bash
 node Launchpad.js init
 ```
+```
+###### Linux
+screen -x minerNvividia or screen -x minerAmd or screen -x minerCpu
+```
 #### stop
 ```bash
 node Launchpad.js stop
