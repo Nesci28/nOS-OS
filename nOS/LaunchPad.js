@@ -42,32 +42,32 @@ if (process.argv[process.argv.length - 1] !== 'stop') {
 }
 
 async function launchPad(step, coin, power, overclocks, database = '', json = '') {
+  process.stdout.write('\033c');
   json = await info(step, json)
 
   if (step == 'init') {
     power = await powerControl(json, step)
     overclocks = await ocControl(json, step)
     coin = await coins(json)
-    // console.log(coin)
+    console.log(util.inspect(coin, false, null, true))
   }
-  // console.log(power)
-  // if (overclocks !== undefined) console.log(overclocks)
+  console.log(util.inspect(power, false, null, true))
+  if (overclocks !== undefined) console.log(util.inspect(overclocks, false, null, true))
 
   let temperature = await tempControl(json, step)
-  // console.log(temperature)
+  console.log(util.inspect(temperature, false, null, true))
 
   let watch = await watchdog(json, step)
-  // console.log(watch)
+  console.log(util.inspect(watch, false, null, true))
 
   if (step !== "init") {
     var existingDB = database.DB.Entry
   }
   database = await DB(json, existingDB)
-  // console.log(database)
+  console.log(util.inspect(database, false, null, true))
 
-  let ui = await showUI(json)
-  process.stdout.write('\033c');
-  console.log(ui)
+  // let ui = await showUI(json)
+  // console.log(ui)
 
   setTimeout(async () => {
     await launchPad('running', coin, power, overclocks, database, json)
