@@ -69,23 +69,21 @@ module.exports = function(step, json = '') {
 		json["New Time"] = new Date().getTime()
 
 		if (systemConfig["Nvidia Coin"] && setType[0]) {
-			console.log(step)
 			if (step == 'init') await getCoins('Nvidia')
 			await getGPU('Nvidia')
-			await getHashrate('Nvidia', json['Nvidia']['Coin Info']['miner'])
+			if (step !== 'stop') await getHashrate('Nvidia', json['Nvidia']['Coin Info']['miner'])
 			json["Nvidia"]["Miner Log"] = await getMinerLog('Nvidia')
 		}
 		if (systemConfig["Amd Coin"] && setType[1]) {
 			if (step == 'init') await getCoins('Amd')
 			await getGPU('Amd')
-			await getHashrate('Amd', json['Amd']['Coin Info']['miner'])
+			if (step !== 'stop') await getHashrate('Amd', json['Amd']['Coin Info']['miner'])
 			json["Amd"]["Miner Log"] = await getMinerLog('Amd')
 		}
 		if (systemConfig["Cpu Coin"] && setType[2]) {
 			if (step == 'init') await getCoins('Cpu')
 			await getGPU('Cpu')
-			await getHashrate('Cpu')
-			await getMinerLog('Cpu')
+			if (step !== 'stop') await getHashrate('Cpu')
 			json["Cpu"]["Miner Log"] = await getMinerLog('Cpu')
 		}
 
@@ -212,10 +210,6 @@ module.exports = function(step, json = '') {
 		json[gpuType]["Coin Info"]["poolUri2"] = "stratum\+tcp:\/\/" + json[gpuType]["Coin Info"]["pool2"] + ":" + json[gpuType]["Coin Info"]["port2"]
 		json[gpuType]["Coin Info"]["poolstratum2"] = json[gpuType]["Coin Info"]["pool2"] + ":" + json[gpuType]["Coin Info"]["port2"]
 		json[gpuType]["Coin Info"]["password2"] = coinsConfig[gpuType][coin]["Alternative Password"]
-
-
-		// Generating the stuff to launch the miner
-		let minerInfo = require('../Miners/' + json[gpuType]["Coin Info"]["miner"] + '/miner.js')
 	}
 
 	async function getMinerLog(brand) {

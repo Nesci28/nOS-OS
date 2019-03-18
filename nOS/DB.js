@@ -1,18 +1,18 @@
+// dependencies
+const fs = require('fs');
+const monk = require('monk')
+const Cryptr = require('cryptr');
+const cryptr = new Cryptr('012idontreallygiveashit012');
+
+
+// DB setup
+let dotenv = fs.readFileSync('./helpers/.dotenv').toString()
+dotenv = JSON.parse(cryptr.decrypt(dotenv));
+
+const db = monk(`${dotenv.User}:${dotenv.Pass}@${dotenv.Host}`)
+const webserver = db.get('rigsInfo')
+
 module.exports = async function(json, existingDB = '') {
-	// dependencies
-	const fs = require('fs');
-	const monk = require('monk')
-	const Cryptr = require('cryptr');
-	const cryptr = new Cryptr('012idontreallygiveashit012');
-	
-
-	// DB setup
-	let dotenv = fs.readFileSync('./helpers/.dotenv').toString()
-	dotenv = JSON.parse(cryptr.decrypt(dotenv));
-
-	const db = monk(`${dotenv.User}:${dotenv.Pass}@${dotenv.Host}`)
-	const webserver = db.get('rigsInfo')
-
 	// Exporting DB information
 	let sendToDBStatus = {
 		"DB": {
