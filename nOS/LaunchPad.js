@@ -7,7 +7,8 @@ const tempControl = require('./FanController.js');
 const coins = require('./Coins.js');
 const watchdog = require('./WatchDog.js');
 const DB = require('./DB.js');
-const showUI = require('./UI.js');
+// const showUI = require('./UI.js');
+const util = require('util');
 
 minerName = ["minerNvidia", "minerAmd", "minerCpu"]
 
@@ -49,8 +50,8 @@ async function launchPad(step, coin, power, overclocks, database = '', json = ''
     power = await powerControl(json, step)
     overclocks = await ocControl(json, step)
     coin = await coins(json)
-    console.log(util.inspect(coin, false, null, true))
   }
+  console.log(util.inspect(coin, false, null, true))
   console.log(util.inspect(power, false, null, true))
   if (overclocks !== undefined) console.log(util.inspect(overclocks, false, null, true))
 
@@ -64,7 +65,7 @@ async function launchPad(step, coin, power, overclocks, database = '', json = ''
     var existingDB = database.DB.Entry
   }
   database = await DB(json, existingDB)
-  console.log(util.inspect(database, false, null, true))
+  console.log(database)
 
   // let ui = await showUI(json)
   // console.log(ui)
