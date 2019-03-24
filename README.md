@@ -18,8 +18,12 @@ git clone https://github.com/Nesci28/nOS.git
 
 ### Arch
 #### official repo
-``sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh``
-``ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10``
+``
+sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh nvidia-settings gnu-netcat
+``
+``
+ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10
+``
 
 #### aur
 ```bash
