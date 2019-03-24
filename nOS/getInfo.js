@@ -25,10 +25,13 @@ module.exports = function(step, json = '') {
 			"_id": null,
 			"New Time": new Date().getTime(),
 			"Old Time": null,
+			"Runtime Start": new Date().getTime(),
+			"Runtime": null,
 			"Username": systemConfig["WebApp Username"],
 			"Password": systemConfig["WebApp Password"],
 			"Hostname" : systemConfig["Rig Hostname"],
 			"IP": ip.address(),
+			"Shellinabox": null,
 			"Nvidia": {
 				"Coin": null,
 				"Algo": null,
@@ -67,6 +70,7 @@ module.exports = function(step, json = '') {
 	async function main(step) {
 		json["Old Time"] = json["New Time"]
 		json["New Time"] = new Date().getTime()
+		json["Runtime"] = json["New Time"] - json["Runtime Start"]
 
 		if (systemConfig["Nvidia Coin"] && setType[0]) {
 			if (step == 'init') await getCoins('Nvidia')
