@@ -3,28 +3,29 @@
 # Installation
 
 ```bash 
-git clone git@github.com:Nesci28/nOS.git
+git clone https://github.com/Nesci28/nOS.git
 ```
 
 ## Linux
 
 #### Dependancies
-| nvidia        	| opencl-amd  	        | openssh 	|
-|:---------------	|:-------------	        |:---------	|
-| __screen__        	| __shellinabox__ 	|         	|
-| __nodejs__        	| __npm__         	|         	|
-| __libmicrohttpd__ 	| __curl__        	|         	|
+| nvidia        	| opencl-amd  	        | openssh 	          |
+|:---------------	|:-------------	        |:---------	          |
+| __screen__        	| __shellinabox__ 	| __nvidia-settings__	|
+| __nodejs__        	| __npm__         	| __gnu-netcat__      |
+| __libmicrohttpd__ 	| __curl__        	|         	          |
 
 
 ### Arch
 #### official repo
 ``sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh``
+``ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10``
 
 #### aur
 ```bash
 cd ~/Downloads
 git clone https://aur.archlinux.org/shellinabox-git.git
-cd shellinabox
+cd shellinabox-git
 
 awk '
   /make/ {
@@ -41,7 +42,7 @@ cd ..
 git clone https://aur.archlinux.org/opencl-amd.git
 cd opencl-amd
 makepkg -Acs
-sudo pacman -U *.tar.xz-
+sudo pacman -U opencl*.tar.xz
 ```
 
 ## Windows
