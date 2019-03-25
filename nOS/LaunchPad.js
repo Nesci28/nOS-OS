@@ -1,6 +1,8 @@
 // Dependancies
+const fs = require('fs');
 const cp = require('child_process');
 const util = require('util');
+const md5File = require('md5-file');
 
 // Requirements
 const info = require('./getInfo.js');
@@ -45,6 +47,7 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 
 if (process.argv[process.argv.length - 1] !== 'stop') {
   (async() => {
+    await moveConfig()
     await launchPad('init')
   })()
 }
@@ -101,4 +104,24 @@ async function launchPad(step, coin, power, overclocks, database = '', json = ''
   setTimeout(async () => {
     await launchPad('shellinabox')
   }, 7200000)
+}
+
+
+function moveConfig() {
+  const files = ['Overclocks.json', 'SystemConfig.json', 'CoinsConfig.json']
+  for (let file of files) {
+    if (fs.existsSync(`/ntfs/${file}`)) {
+      if (! checkFiles(`/home/nos/${file}`, `/ntfs/${file}`)) {
+        move(`${file}`)
+      }
+    }
+  }
+}
+
+function checkFiles(file1, file2) {
+  return md5File.sync(file1) === md5File.sync(file2)
+}
+
+function move(file) {
+  fs.copyFileSync('/ntfs/' + file, `/home/nos/${file}`);
 }

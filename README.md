@@ -83,15 +83,15 @@ Math.round(Number(90) + (217 - 90) / 100 * (70 - 50)) == 115 W
 
 #### start
 ```bash
-./start.sh
-```
-```
-###### Linux
-screen -x minerNvividia or screen -x minerAmd or screen -x minerCpu
+./start.sh 
+or 
+start (if using the full image)
 ```
 #### stop
 ```bash
-node Launchpad.js stop
+node Launchpad.js stop 
+or
+stop (if using the full image)
 ```
 
 ## Contributing
