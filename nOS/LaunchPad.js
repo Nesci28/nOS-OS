@@ -28,6 +28,7 @@ if (process.argv[process.argv.length - 1] == 'stop') {
     console.log(temperature)
 
     cp.execSync('pm2 kill')
+    cp.execSync('rm -rf ~/.pm2/logs/*')
 
     for (let name of minerName) {
       try {

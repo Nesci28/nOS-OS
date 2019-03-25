@@ -14,6 +14,7 @@ git clone https://github.com/Nesci28/nOS.git
 | __screen__        	| __shellinabox__ 	| __nvidia-settings__	|
 | __nodejs__        	| __npm__         	| __gnu-netcat__      |
 | __libmicrohttpd__ 	| __curl__        	| __pm2 (npm)__       |
+| __tmux__          	|                 	|                     |
 
 Shellinabox must be running on port: 4200
 
@@ -82,7 +83,7 @@ Math.round(Number(90) + (217 - 90) / 100 * (70 - 50)) == 115 W
 
 #### start
 ```bash
-node Launchpad.js init
+./start.sh
 ```
 ```
 ###### Linux
