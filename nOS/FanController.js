@@ -8,8 +8,14 @@ module.exports = async function(json, step) {
   // Exporting watchdog result
   let temperatureStatus = {
     "Temperature": {
-      "Nvidia": [],
-      "Amd": []
+      "Nvidia": {
+        "Current": [],
+        "Fan Speed": []
+      },
+      "Amd": {
+        "Current": [],
+        "Fan Speed": []
+      }
     }
   };
 
@@ -77,13 +83,13 @@ module.exports = async function(json, step) {
       minTemperature = ocSettings[brand]["Max Temperature"] - 3
       maxFanSpeed = ocSettings[brand]["Max FanSpeed"]
 
+      gpuDegree = []
       gpuTemperature = []
 
       for (let i = 0; i < infos[brand]["GPU"].length; i++) {
         if (brand == "Nvidia") currentFanSpeed = Number(infos[brand]["GPU"][i]["Fan Speed"].split(' ')[0])
-        if (brand == "Amd") {
-          currentFanSpeed = Number(infos[brand]["GPU"][i]["Fan Speed"].toString().split('.')[0])
-        }
+        if (brand == "Amd") currentFanSpeed = Number(infos[brand]["GPU"][i]["Fan Speed"].toString().split('.')[0])
+        
         if (infos[brand]["GPU"][i.toString()]["Temperature"] < minTemperature) {
           if (currentFanSpeed >= 21) { 
             if (brand == "Nvidia") {
@@ -109,9 +115,14 @@ module.exports = async function(json, step) {
               gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed + 5)
             }
           }
+        } else {
+          gpuTemperature[i] = currentFanSpeed
         }
-        temperatureStatus["Temperature"][brand][i] = [gpuTemperature]
+        gpuDegree[i] = Number(infos[brand]["GPU"][i.toString()]["Temperature"])
       }
+      temperatureStatus["Temperature"][brand]["Current"] = gpuDegree
+      temperatureStatus["Temperature"][brand]["Fan Speed"] = gpuTemperature
+
       return fanCommand
     }
   }

@@ -1,6 +1,6 @@
 // dependencies
 const fs = require('fs');
-const monk = require('monk')
+const monk = require('monk');
 const Cryptr = require('cryptr');
 const cryptr = new Cryptr('012idontreallygiveashit012');
 

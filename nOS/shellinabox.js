@@ -1,4 +1,4 @@
-module.exports = async function() {
+module.exports = async function(step) {
   // Dependancies
   const ngrok = require('ngrok');
 
@@ -8,14 +8,10 @@ module.exports = async function() {
 		}
 	};
 
-  shellinabox.Shellinabox.URL = await ngrok.connect(4200);
+  if (step == "shellinabox") {
+    await ngrok.disconnect();
+  }
 
-  // await localtunnel(4200, function(err, tunnel) {
-  //   if (err) {
-  //     console.log(err)
-  //   } else {
-  //     shellinabox.Shellinabox.URL = tunnel.url
-  //   }
-  // });
+  shellinabox.Shellinabox.URL = await ngrok.connect(4200);
   return shellinabox
 }

@@ -20,10 +20,11 @@ Logs/backups/**
 Logs/*.txt
 .tmux**
 .esd**
-.npm/
+.npm
 .mplayer/
 test**
 Pictures/
 .nvidia-settings-rc
 .dbshell
 .mongorc.js
+.pm2/

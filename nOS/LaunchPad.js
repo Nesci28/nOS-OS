@@ -1,5 +1,8 @@
+// Dependancies
 const cp = require('child_process');
+const util = require('util');
 
+// Requirements
 const info = require('./getInfo.js');
 const powerControl = require('./PowerController.js');
 const ocControl = require('./OverclockController.js');
@@ -9,9 +12,8 @@ const watchdog = require('./WatchDog.js');
 const DB = require('./DB.js');
 const shellinabox = require('./shellinabox.js')
 // const showUI = require('./UI.js');
-const util = require('util');
 
-minerName = ["minerNvidia", "minerAmd", "minerCpu"]
+let minerName = ["minerNvidia", "minerAmd", "minerCpu"]
 
 if (process.argv[process.argv.length - 1] == 'stop') {
   (async() => {
@@ -25,20 +27,20 @@ if (process.argv[process.argv.length - 1] == 'stop') {
     let temperature = await tempControl(json, "stop")
     console.log(temperature)
 
+    cp.execSync('pm2 kill')
+
     for (let name of minerName) {
       try {
         let PID = cp.execSync(`screen -ls ${name}`).toString().trim().split("\n")[1].trim().split('.')[0]
-        if (PID) cp.execSync(`kill ${PID}`)
+        if (PID) {
+          console.log(`Closing ${name}...`)
+          cp.execSync(`kill ${PID}`)
+        }
       } catch {} 
     }
-    try{
-      PID = cp.execSync('pidof shellinaboxd')
-      PID = PID.split(' ')[0]
-      if (PID) cp.execSync(`kill ${PID}`)
-    } catch {}
+    process.exit()
   })()
 }
-
 
 if (process.argv[process.argv.length - 1] !== 'stop') {
   (async() => {
@@ -47,38 +49,55 @@ if (process.argv[process.argv.length - 1] !== 'stop') {
 }
 
 async function launchPad(step, coin, power, overclocks, database = '', json = '', shell = '') {
-  process.stdout.write('\033c');
-  json = await info(step, json)
+  if (step !== "shellinabox") {
+    process.stdout.write('\033c');
+    json = await info(step, json)
+  }
 
-  if (step == 'init') {
-    shell = await shellinabox(json)
+  if (step == "init") {
+    shell = await shellinabox(step)
     json.Shellinabox = shell.Shellinabox.URL
     power = await powerControl(json, step)
     overclocks = await ocControl(json, step)
     coin = await coins(json)
+    database = await DB(json, existingDB)
   }
-  console.log(shell)
-  console.log(util.inspect(coin, false, null, true))
-  console.log(util.inspect(power, false, null, true))
-  if (overclocks !== undefined) console.log(util.inspect(overclocks, false, null, true))
+
+  if (step == "init" || step == "running") {
+    var temperature = await tempControl(json, step)
+    var watch = await watchdog(json, step)
+  }
   
-  let temperature = await tempControl(json, step)
-  console.log(util.inspect(temperature, false, null, true))
-  
-  let watch = await watchdog(json, step)
-  console.log(util.inspect(watch, false, null, true))
-  
-  if (step !== "init") {
+  if (step == "running") {
     var existingDB = database.DB.Entry
   }
-  database = await DB(json, existingDB)
-  console.log(database)
-  // console.log(database.DB.Entry)
+
+  if (step == "shellinabox") {
+    shell = await shellinabox(step)
+    json.Shellinabox = shell.Shellinabox.URL
+  }
   
   // let ui = await showUI(json)
-  // console.log(ui)
+  
+  if (step !== "shellinabox") {
+    // console.log(ui)
+    console.log(util.inspect(coin, false, null, true))
+    console.log(util.inspect(power, false, null, true))
+    if (overclocks !== undefined) {
+      console.log(util.inspect(overclocks, false, null, true))
+    }
+    console.log(util.inspect(temperature, false, null, true))
+    console.log(util.inspect(watch, false, null, true))
+    console.log(database)
+    console.log(shell)
+  }
+
 
   setTimeout(async () => {
     await launchPad('running', coin, power, overclocks, database, json, shell)
   }, 15000)
+
+  setTimeout(async () => {
+    await launchPad('shellinabox')
+  }, 7200000)
 }

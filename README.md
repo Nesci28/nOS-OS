@@ -9,19 +9,18 @@ git clone https://github.com/Nesci28/nOS.git
 ## Linux
 
 #### Dependancies
-| nvidia        	| opencl-amd  	        | openssh 	          |
-|:---------------	|:-------------	        |:---------	          |
+| nvidia        	    | opencl-amd  	    | openssh 	          |
+|:---------------	    |:-------------	    |:---------	          |
 | __screen__        	| __shellinabox__ 	| __nvidia-settings__	|
 | __nodejs__        	| __npm__         	| __gnu-netcat__      |
 | __libmicrohttpd__ 	| __curl__        	|         	          |
 
+Shellinabox must be running on port: 4200
 
 ### Arch
 #### official repo
 ``
 sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh nvidia-settings gnu-netcat
-``
-``
 ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10
 ``
 
