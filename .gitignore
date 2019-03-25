@@ -20,7 +20,7 @@ Logs/backups/**
 Logs/*.txt
 .tmux**
 .esd**
-.npm
+.npm/
 .mplayer/
 test**
 Pictures/

@@ -13,7 +13,7 @@ git clone https://github.com/Nesci28/nOS.git
 |:---------------	    |:-------------	    |:---------	          |
 | __screen__        	| __shellinabox__ 	| __nvidia-settings__	|
 | __nodejs__        	| __npm__         	| __gnu-netcat__      |
-| __libmicrohttpd__ 	| __curl__        	|         	          |
+| __libmicrohttpd__ 	| __curl__        	| __pm2 (npm)__       |
 
 Shellinabox must be running on port: 4200
 
@@ -29,14 +29,8 @@ ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10
 cd ~/Downloads
 git clone https://aur.archlinux.org/shellinabox-git.git
 cd shellinabox-git
+lineNumber=$(grep --max-count 1 -Fnw 'make' ~/Downloads/shellinabox-git/PKGBUILD | cut -f1 -d:); sed -n -i "p;${lineNumber}a find . -name \"service.c\" -exec sed -i -e \"s|-oRhostsRSAAuthentication=no||g\" {} \;" ~/Downloads/shellinabox-git/PKGBUILD; sed -n -i "p;$((lineNumber++))a find . -name \"service.c\" -exec sed -i -e \"s|-oRSAAuthentication=no||g\" {} \;" ~/Downloads/shellinabox-git/PKGBUILD
 
-awk '
-  /make/ {
-      print 'find . -name "service.c" -exec sed -i -e "s|-oRhostsRSAAuthentication=no||g" {} \;'
-      print 'find . -name "service.c" -exec sed -i -e "s|-oRSAAuthentication=no||g" {} \;'
-  }
-  { print }
-  ' PKGBUILD
 
 makepkg -Acs
 sudo pacman -U *.tar.xz
@@ -50,6 +44,11 @@ sudo pacman -U opencl*.tar.xz
 
 ## Windows
 WIP
+
+## All
+``
+npm install -g pm2
+``
 
 
 # Configuration
