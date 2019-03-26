@@ -3,6 +3,7 @@ const fs = require('fs');
 const cp = require('child_process');
 const util = require('util');
 const md5File = require('md5-file');
+const mv = require('mv');
 
 // Requirements
 const info = require('./getInfo.js');
@@ -48,11 +49,12 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 if (process.argv[process.argv.length - 1] !== 'stop') {
   (async() => {
     await moveConfig()
-    await launchPad('init')
+    let counter = 0
+    await launchPad('init', counter)
   })()
 }
 
-async function launchPad(step, coin, power, overclocks, database = '', json = '', shell = '') {
+async function launchPad(step, counter, coin, power, overclocks, database = '', json = '', shell = '') {
   if (step !== "shellinabox") {
     process.stdout.write('\033c');
     json = await info(step, json)
@@ -76,34 +78,37 @@ async function launchPad(step, coin, power, overclocks, database = '', json = ''
     var existingDB = database.DB.Entry
   }
 
-  if (step == "shellinabox") {
+  if (counter == 480) {
+    counter = 0
     shell = await shellinabox(step)
     json.Shellinabox = shell.Shellinabox.URL
   }
   
   // let ui = await showUI(json)
   
-  if (step !== "shellinabox") {
-    // console.log(ui)
-    console.log(util.inspect(coin, false, null, true))
-    console.log(util.inspect(power, false, null, true))
-    if (overclocks !== undefined) {
-      console.log(util.inspect(overclocks, false, null, true))
-    }
-    console.log(util.inspect(temperature, false, null, true))
-    console.log(util.inspect(watch, false, null, true))
-    console.log(database)
-    console.log(shell)
+  // console.log(ui)
+  console.log(util.inspect(coin, false, null, true))
+  console.log(util.inspect(power, false, null, true))
+  if (overclocks !== undefined) {
+    console.log(util.inspect(overclocks, false, null, true))
   }
-
+  console.log(util.inspect(temperature, false, null, true))
+  console.log(util.inspect(watch, false, null, true))
+  console.log(database)
+  console.log(shell, counter)
 
   setTimeout(async () => {
-    await launchPad('running', coin, power, overclocks, database, json, shell)
+    counter++
+    await launchPad('running', counter, coin, power, overclocks, database, json, shell, counter)
   }, 15000)
 
-  setTimeout(async () => {
-    await launchPad('shellinabox')
-  }, 7200000)
+  // setTimeout(async () => {
+  //   await launchPad('shellinabox')
+  // }, 7200000)
+
+  // setTimeout(async () => {
+    // await launchPad('shellinabox', coin, power, overclocks, database, json, shell)
+  // }, 5000)
 }
 
 
@@ -123,5 +128,7 @@ function checkFiles(file1, file2) {
 }
 
 function move(file) {
-  fs.copyFileSync('/ntfs/' + file, `/home/nos/${file}`);
+  mv(`/ntfs/${file}`, `/home/nos/${file}`, function(err) {
+    console.log(err)
+  });
 }
