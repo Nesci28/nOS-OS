@@ -28,3 +28,4 @@ Pictures/
 .dbshell
 .mongorc.js
 .pm2/
+.image/
