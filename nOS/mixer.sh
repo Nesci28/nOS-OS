@@ -44,7 +44,7 @@ n
 
 
 8300
-p
+w
 EOF
 sleep 234
 
