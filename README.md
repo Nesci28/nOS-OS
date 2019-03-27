@@ -4,25 +4,27 @@
 
 ```bash 
 git clone https://github.com/Nesci28/nOS.git
+(optional: nOS rice, needs i3-gaps)
+git clone https://github.com/Nesci28/rice.git
 ```
 
 ## Linux
-
 #### Dependancies
 | nvidia        	    | opencl-amd  	    | openssh 	          |
 |:---------------	    |:-------------	    |:---------	          |
 | __screen__        	| __shellinabox__ 	| __nvidia-settings__	|
 | __nodejs__        	| __npm__         	| __gnu-netcat__      |
 | __libmicrohttpd__ 	| __curl__        	| __pm2 (npm)__       |
-| __tmux__          	|                 	|                     |
+| __tmux__          	| __rxvt-unicode__  |                     |
 
 Shellinabox must be running on port: 4200
 
 ### Arch
 #### official repo
 ``
-sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh nvidia-settings gnu-netcat
+sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh nvidia-settings gnu-netcat rxvt-unicode
 ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10
+sudo npm install -g pm2
 ``
 
 #### aur
@@ -46,12 +48,6 @@ sudo pacman -U opencl*.tar.xz
 ## Windows
 WIP
 
-## All
-``
-npm install -g pm2
-``
-
-
 # Configuration
 ## SystemConfig.json
 - Use the same __Coin Name__ as in __CoinsConfig.json__
@@ -71,13 +67,13 @@ npm install -g pm2
 
 
 ```
-Math.round(Number(minWatt) + (maxWatt - minWatt) / 100 * (maxPower - 50))
+Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
 exemple :
 Gtx 1070 Ti 
-minWatt by nvidia-smi = 90 W
-maxWatt by nvidia-smi = 217 W
+minWatt by nvidia-smi = 90 W (50%)
+maxWatt by nvidia-smi = 217 W (100%)
 Powerlimit % configured = 70
-Math.round(Number(90) + (217 - 90) / 100 * (70 - 50)) == 115 W
+Math.round(Number(90) + (217 - 90) / 50 * (70 - 50)) == 141 W
 ```
 # Usage
 
