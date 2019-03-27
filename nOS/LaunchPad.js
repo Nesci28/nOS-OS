@@ -30,6 +30,9 @@ if (process.argv[process.argv.length - 1] == 'stop') {
     let temperature = await tempControl(json, "stop")
     console.log(temperature)
 
+    let shell = await shellinabox('stop')
+    console.log(shell)
+
     cp.execSync('pm2 kill')
     cp.execSync('rm -rf ~/.pm2/logs/*')
 
@@ -80,7 +83,7 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
 
   if (counter == 480) {
     counter = 0
-    shell = await shellinabox(step)
+    shell = await shellinabox('shellinabox')
     json.Shellinabox = shell.Shellinabox.URL
   }
   

@@ -29,3 +29,7 @@ Pictures/
 .mongorc.js
 .pm2/
 .image/
+.gitconfig
+.repo_.gitconfig.json
+image/
+.gdrive

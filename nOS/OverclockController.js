@@ -24,7 +24,12 @@ module.exports = async function(json, step) {
       if (overclocksStatus["Overclocks"]["Nvidia"]["Core"] == null) overclocksStatus["Overclocks"]["Nvidia"]["Core"] = []
       if (overclocksStatus["Overclocks"]["Nvidia"]["Mem"] == null) overclocksStatus["Overclocks"]["Nvidia"]["Mem"] = []
 
-      cp.execSync('sudo nvidia-xconfig -a --cool-bits 28');
+      // TODO : add xorg.conf detector if all the GPUs have cool-bits 28
+      let xorgNumber = cp.execSync('cat /etc/X11/xorg.conf | grep \'Option         \"Coolbits\" \"28\"\' | wc -l').toString().trim()
+      if (xorgNumber < json.Nvidia.GPU.length) {
+        cp.execSync('sudo nvidia-xconfig -a --cool-bits 28');
+        cp.execSync('i3-msg restart')
+      }
       var ocCommand = ''
 
       if (step == "init") {

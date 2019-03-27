@@ -65,7 +65,7 @@ module.exports = async function(json, step) {
       if (brand == "Nvidia") {
         let minWatt = json[brand]["GPU"][i]["Min Watt"].split(' ')[0]
         let maxWatt = json[brand]["GPU"][i]["Max Watt"].split(' ')[0]
-        nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 100 * (maxPower - 50))
+        nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
         initCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
       }
 
@@ -80,7 +80,7 @@ module.exports = async function(json, step) {
         })
         let minWatt = powerList[0] / 100 * 12
         let maxWatt = powerList[powerList.length - 1] / 100 * 12
-        nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 100 * (maxPower - 50))
+        nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
         initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
       }
 
