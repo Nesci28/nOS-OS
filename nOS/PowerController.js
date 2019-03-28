@@ -82,7 +82,7 @@ module.exports = async function(json, step) {
           cp.execSync('sudo ./helpers/ROC-smi/rocm-smi -d 0 --setpoweroverdrive 100000 --autorespond yes').toString()
         } catch(ex) {
           var maxPower = ex.stdout.toString()
-          maxPower = maxPower.split('than')[1].split('.')[0].trim()
+          maxPower = parseInt(maxPower.match(/than (.*)W/)[1])
         }
 
         let minWatt = (maxPower / 2).toFixed(0)
