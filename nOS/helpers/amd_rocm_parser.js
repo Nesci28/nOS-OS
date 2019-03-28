@@ -20,9 +20,9 @@ module.exports = function(stdout) {
         temp: parseFloat(toks[1]),
         pwr: parseFloat(toks[2]),
         sclock: parseInt(toks[3]),
-        mclock: parseInt(toks[4]),
-        fan: parseFloat(toks[7]),
-        perf: toks[8],
+        mclock: parseFloat(toks[4]),
+        fan: parseFloat(toks[6]),
+        perf: toks[7],
         sclockod: parseFloat(toks[10]),
         utilization: parseInt(toks[12])
       }

@@ -21,7 +21,11 @@ module.exports = async function(json, step) {
       // if (wattCommand !== '') cp.execSync(wattCommand)
 
       if (json.Amd.GPU.length > 0) wattCommand = await initialize(json, json.Amd.GPU.length, "Amd")
-      if (wattCommand !== '') cp.execSync(wattCommand)
+      if (wattCommand !== '') {
+        try {
+          cp.execSync(wattCommand)
+        } catch{}
+      }
     }
 
     if (step !== "init" && step !== "stop") {
@@ -29,7 +33,11 @@ module.exports = async function(json, step) {
       if (wattCommand !== '') cp.execSync(wattCommand)
 
       if (json.Amd.GPU.length > 0) wattCommand = await checkCurrent(json, json.Amd.GPU.length, "Amd")
-      if (wattCommand !== '') cp.execSync(wattCommand)
+      if (wattCommand !== '') {
+        try {
+          cp.execSync(wattCommand)
+        } catch {}
+      }
     }
 
     return powerStatus
@@ -57,7 +65,7 @@ module.exports = async function(json, step) {
       } else {
         initCommand = defaultValues(json, maxPower, i, brand, initCommand)
       }
-      powerStatus["Power"][brand][i] = nextWatt
+      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
     }
     return initCommand
 
@@ -69,19 +77,19 @@ module.exports = async function(json, step) {
         initCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
       }
 
-      if (brand == "Amd") {
-        let powerList = cp.execSync(`sudo ./helpers/ohgodatool/ohgodatool -i ${i} --show-voltage | grep VDD`).toString().split('\n')
-        for (let i = 0; i < powerList.length; i++) {
-          if (powerList[i] == '') powerList.splice(i, 1)
-          else powerList[i] = Number(powerList[i].replace(/\D/g, ''))
+      if (brand == "Amd") {     
+        try {
+          cp.execSync('sudo ./helpers/ROC-smi/rocm-smi -d 0 --setpoweroverdrive 100000 --autorespond yes').toString()
+        } catch(ex) {
+          var maxPower = ex.stdout.toString()
+          maxPower = maxPower.split('than')[1].split('.')[0].trim()
         }
-        powerList = powerList.filter(number => {
-          return number < 65000
-        })
-        let minWatt = powerList[0] / 100 * 12
-        let maxWatt = powerList[powerList.length - 1] / 100 * 12
+
+        let minWatt = (maxPower / 2).toFixed(0)
+        let maxWatt = maxPower
         nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
         initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
+        if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
       }
 
       return initCommand

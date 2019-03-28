@@ -10,6 +10,7 @@ module.exports = async function(step) {
 
   if (step == "shellinabox" || step == 'stop') {
     await ngrok.disconnect();
+    await ngrok.kill();
     shellinabox.Shellinabox.URL = 'Stopped'
   }
 

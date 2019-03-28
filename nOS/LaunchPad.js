@@ -35,6 +35,16 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 
     cp.execSync('pm2 kill')
     cp.execSync('rm -rf ~/.pm2/logs/*')
+    cp.execSync('pm2 flush')
+
+    let pm2List = cp.execSync('ps aux | grep "pm2 logs 0" | grep "node" | sed \'s/  */ /g\' | cut -d \' \' -f2')
+    pm2List = pm2List.toString().trim().split('\n')
+    for (let ID of pm2List) {
+      try {
+        cp.execSync(`kill ${ID}`)
+      }
+      catch {}
+    }
 
     for (let name of minerName) {
       try {
@@ -49,7 +59,7 @@ if (process.argv[process.argv.length - 1] == 'stop') {
   })()
 }
 
-if (process.argv[process.argv.length - 1] !== 'stop') {
+if (process.argv[process.argv.length - 1] !== 'stop' && process.argv[process.argv.length - 1] !== 'gpu') {
   (async() => {
     await moveConfig()
     let counter = 0
@@ -114,6 +124,12 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
   // }, 5000)
 }
 
+if (process.argv[process.argv.length - 1] == 'gpu') {
+  (async() => {
+    let json = await info('init')
+    console.log(json.Amd.GPU)
+  })()
+}
 
 function moveConfig() {
   const files = ['Overclocks.json', 'SystemConfig.json', 'CoinsConfig.json']
