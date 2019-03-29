@@ -55,6 +55,7 @@ if (process.argv[process.argv.length - 1] == 'stop') {
         }
       } catch {} 
     }
+    process.stdout.write('\033c');
     process.exit()
   })()
 }
@@ -114,14 +115,6 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
     counter++
     await launchPad('running', counter, coin, power, overclocks, database, json, shell, counter)
   }, 15000)
-
-  // setTimeout(async () => {
-  //   await launchPad('shellinabox')
-  // }, 7200000)
-
-  // setTimeout(async () => {
-    // await launchPad('shellinabox', coin, power, overclocks, database, json, shell)
-  // }, 5000)
 }
 
 if (process.argv[process.argv.length - 1] == 'gpu') {

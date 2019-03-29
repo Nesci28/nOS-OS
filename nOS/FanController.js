@@ -5,7 +5,7 @@ module.exports = async function(json, step) {
   // Setup
   const ocSettings = require('../Overclocks.json');
 
-  // Exporting watchdog result
+  // Exporting FanController result
   let temperatureStatus = {
     "Temperature": {
       "Nvidia": {

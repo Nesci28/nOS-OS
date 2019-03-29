@@ -67,14 +67,17 @@ WIP
 
 
 ```
+Formulas for power limit percentage :
 Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
-exemple :
+
+Exemple :
 Gtx 1070 Ti 
 minWatt by nvidia-smi = 90 W (50%)
 maxWatt by nvidia-smi = 217 W (100%)
 Powerlimit % configured = 70
 Math.round(Number(90) + (217 - 90) / 50 * (70 - 50)) == 141 W
 ```
+
 # Usage
 
 #### start
