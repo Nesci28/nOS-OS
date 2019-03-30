@@ -89,7 +89,7 @@ sudo losetup -d ${loopDevice}
 
 cd ~/image
 
-ID=$(gdrive list | grep nOS.zip | cut -d ' ' -f1)
+ID=$(gdrive list | grep "nOS.zip" | sed 's/  */ /g' | cut -d ' ' -f1)
 
 if [[ ! -z ${ID} ]]; then
   response=''
@@ -106,8 +106,15 @@ while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
   response=$(gdrive upload nOS.zip)
   sleep 1
 done
+
+ID=''
+while [[ -z ${ID} ]]; do
+  ID=$(gdrive list | grep "nOS.zip" | sed 's/  */ /g' | cut -d ' ' -f1)
+  sleep 1
+done
+
 response=''
 while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
-  response=$(gdrive share -i ${ID})
+  response=$(gdrive share ${ID})
   sleep 1
 done
