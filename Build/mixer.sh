@@ -78,9 +78,9 @@ sed -i "s/${oldUUID}/${newUUID}/g" /boot/grub/grub.cfg
 mkinitcpio -p linux
 EOT
 
-sudo cp ~/mnt/USB/home/nos/SystemConfig.json /mnt/destination/ntfs/SystemConfig.json
-sudo cp ~/mnt/USB/home/nos/CoinsConfig.json /mnt/destination/ntfs/CoinsConfig.json
-sudo cp ~/mnt/USB/home/nos/Overclocks.json /mnt/destination/ntfs/Overclocks.json
+sudo cp /mnt/USB/home/nos/SystemConfig.json /mnt/destination/ntfs/SystemConfig.json
+sudo cp /mnt/USB/home/nos/CoinsConfig.json /mnt/destination/ntfs/CoinsConfig.json
+sudo cp /mnt/USB/home/nos/Overclocks.json /mnt/destination/ntfs/Overclocks.json
 
 sudo umount -l /mnt/destination/boot
 sudo umount -l /mnt/destination/ntfs
@@ -89,32 +89,40 @@ sudo losetup -d ${loopDevice}
 
 cd ~/image
 
-ID=$(gdrive list | grep "nOS.zip" | sed 's/  */ /g' | cut -d ' ' -f1)
-
-if [[ ! -z ${ID} ]]; then
-  response=''
-  while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
-    response=$(gdrive delete ${ID})
-    sleep 1
-  done
-fi
+for ((i = 0; i < 10; i++)); do
+  ID=$(gdrive list | grep "nOS.zip" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
+  if [[ ! -z ${ID} ]]; then
+    response=''
+    while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
+      response=$(gdrive delete ${ID})
+      sleep 1
+    done
+  fi
+done
+echo -e "Done deleting the old version of nOS on the gdrive"
 
 7z a nOS.zip nOS.img
+md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
+touch md5hash.txt
+echo ${md5hash} > md5hash.txt
 
 response=''
 while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
   response=$(gdrive upload nOS.zip)
   sleep 1
 done
+echo -e "Done uploading the new version of nOS on the gdrive"
 
 ID=''
 while [[ -z ${ID} ]]; do
   ID=$(gdrive list | grep "nOS.zip" | sed 's/  */ /g' | cut -d ' ' -f1)
   sleep 1
 done
+echo -e "gdrive ID of the new version of nOS is : ${ID}"
 
 response=''
 while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
   response=$(gdrive share ${ID})
   sleep 1
 done
+echo -e "new version is set to : Shared"
