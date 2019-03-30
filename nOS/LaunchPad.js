@@ -80,6 +80,7 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
     power = await powerControl(json, step)
     overclocks = await ocControl(json, step)
     coin = await coins(json)
+    cp.execSync('urxvt -e ./tmux.sh && exit &')
     database = await DB(json, existingDB)
   }
 

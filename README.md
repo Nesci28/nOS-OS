@@ -82,7 +82,9 @@ Math.round(Number(90) + (217 - 90) / 50 * (70 - 50)) == 141 W
 
 #### start
 ```bash
-./start.sh 
+./start.sh
+or
+pm2 start LaunchPad.js -- init 2>&1 >/dev/null; pm2 logs 0 --raw &
 or 
 start (if using the full image)
 ```
