@@ -22,7 +22,11 @@ console.log(link, md5hash);
 	if (existingDB) {
 		webserver.update({"Download": /(.)/, "md5": /(.)/}, {"download": link, "md5": md5hash}, [{"castIds": false}])
 	} else {
-		webserver.insert({"download": link, "md5": md5hash})
+		webserver.insert({"download": link, "md5": md5hash}, [{"castIds": false}])
+			.then((docs) => {
+			}).catch((err) => {
+				console.log(err);
+			})
 	}
 	process.exit()
 })()
