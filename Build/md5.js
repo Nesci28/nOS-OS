@@ -14,11 +14,8 @@ const webserver = db.get('rigsInfo');
 const link = process.argv[process.argv.length - 2];
 const md5hash = process.argv[process.argv.length - 1];
 
-console.log(link, md5hash);
-
 (async() => {
 	existingDB = await webserver.findOne({"download": /(.)/, "md5": /(.)/})
-	console.log(existingDB)
 	if (existingDB) {
 		await webserver.update(existingDB, {"download": link, "md5": md5hash}, [{"castIds": false}])
 	} else {
