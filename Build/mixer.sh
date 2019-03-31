@@ -128,11 +128,13 @@ while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
 done
 echo -e "new version is set to : Shared"
 
+cd ~/Build
 node md5.js "https://drive.google.com/open?id=${ID}" "${md5hash}"
+
+cd ~
 sed -i "/Download:/c\Download: https://drive.google.com/open?id=${ID}" README.md
 sed -i "/md5:/c\md5: ${md5hash}" README.md
 
-cd ~
 git add README.md
 git commit -am "Auto-Update: Download link and md5 hash (from mixer)"
 git push origin master
