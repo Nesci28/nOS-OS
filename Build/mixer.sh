@@ -1,4 +1,4 @@
-# Dependancies: du, losetup, rsync, gdrive, zip, pv, mongo
+# Dependancies: du, losetup, rsync, gdrive, gzip, pv, mongo
 
 lsblk
 read -p 'Select the disk letter /dev/sdX : ' disk1
@@ -15,8 +15,8 @@ size=$(sudo du -cs --block-size=512 /mnt/USB | tail -1)
 size=$(echo ${size} | cut -d ' ' -f1)
 size=$((size+2000000))
 
-cd ~/image
-sudo dd if=/dev/zero of=~/image/nOS.img bs=512 count=${size} status=progress
+cd ~/Image
+sudo dd if=/dev/zero of=~/Image/nOS.img bs=512 count=${size} status=progress
 sudo gdisk nOS.img <<EOF
 o
 Y
@@ -46,7 +46,7 @@ y
 EOF
 
 sleep 1
-cd ~/image
+cd ~/Image
 sudo losetup -fP nOS.img
 loopDevice=$(losetup -a | head -1 | cut -d ' ' -f1 | sed 's/://g')
 if [[ -z ${loopDevice} ]]; then
@@ -87,7 +87,7 @@ sudo umount -l /mnt/destination/ntfs
 sudo umount -l /mnt/destination
 sudo losetup -d ${loopDevice}
 
-cd ~/image
+cd ~/Image
 
 for ((i = 0; i < 10; i++)); do
   ID=$(gdrive list | grep "nOS.zip" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
@@ -129,7 +129,7 @@ done
 echo -e "new version is set to : Shared"
 
 node md5.js "https://drive.google.com/open?id=${ID}" "${md5hash}"
-sed -i "/Download:/c\Download: ${ID}" README.md
+sed -i "/Download:/c\Download: https://drive.google.com/open?id=${ID}" README.md
 sed -i "/md5:/c\md5: ${md5hash}" README.md
 
 cd ~
