@@ -24,14 +24,6 @@ module.exports = async function(json, step) {
     if (json.Nvidia.GPU.length > 0) {
       if (overclocksStatus["Overclocks"]["Nvidia"]["Core"] == null) overclocksStatus["Overclocks"]["Nvidia"]["Core"] = []
       if (overclocksStatus["Overclocks"]["Nvidia"]["Mem"] == null) overclocksStatus["Overclocks"]["Nvidia"]["Mem"] = []
-
-      // TODO : add xorg.conf detector if all the GPUs have cool-bits 28
-      const xorg = fs.readFileSync('/etc/X11/xorg.conf').toString()
-      const xorgNumber = xorg.match(/Option         "Coolbits" "28"/g).length
-      if (xorgNumber < json.Nvidia.GPU.length) {
-        cp.execSync('sudo nvidia-xconfig -a --cool-bits 28');
-        cp.execSync('sudo systemctl reboot')
-      }
       var ocCommand = ''
 
       if (step == "init") {

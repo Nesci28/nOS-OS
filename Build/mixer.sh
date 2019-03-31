@@ -1,4 +1,4 @@
-# Dependancies: du, losetup, rsync, gdrive, p7zip
+# Dependancies: du, losetup, rsync, gdrive, zip, pv, mongo
 
 lsblk
 read -p 'Select the disk letter /dev/sdX : ' disk1
@@ -13,7 +13,7 @@ sudo rm -r .cache
 
 size=$(sudo du -cs --block-size=512 /mnt/USB | tail -1)
 size=$(echo ${size} | cut -d ' ' -f1)
-size=$((size+1000000))
+size=$((size+2000000))
 
 cd ~/image
 sudo dd if=/dev/zero of=~/image/nOS.img bs=512 count=${size} status=progress
@@ -101,7 +101,8 @@ for ((i = 0; i < 10; i++)); do
 done
 echo -e "Done deleting the old version of nOS on the gdrive"
 
-7z a nOS.zip nOS.img
+pv -tpre nOS.img | gzip > nOS.zip
+
 md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
 touch md5hash.txt
 echo ${md5hash} > md5hash.txt
@@ -126,3 +127,12 @@ while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
   sleep 1
 done
 echo -e "new version is set to : Shared"
+
+node md5.js "https://drive.google.com/open?id=${ID}" "${md5hash}"
+sed -i "/Download:/c\Download: ${ID}" README.md
+sed -i "/md5:/c\md5: ${md5hash}" README.md
+
+cd ~
+git add README.md
+git commit -am "Auto-Update: Download link and md5 hash (from mixer)"
+git push origin master

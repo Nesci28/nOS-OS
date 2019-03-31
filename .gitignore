@@ -33,3 +33,4 @@ Pictures/
 .repo_.gitconfig.json
 image/
 .gdrive
+.node-gyp/
