@@ -28,7 +28,7 @@ Pictures/
 .dbshell
 .mongorc.js
 .pm2/
-.image/
+Image/
 .gitconfig
 .repo_.gitconfig.json
 image/

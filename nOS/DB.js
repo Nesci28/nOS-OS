@@ -31,7 +31,7 @@ module.exports = async function(json, existingDB = '') {
 	json = await setID(existingDB, json).json
 	
 	if (existingDB.length > 0) {
-		webserver.update({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]}, json, [{"castIds": false}])
+		webserver.update(existingDB, json, [{"castIds": false}])
 	} else {
 		webserver.insert(json, [{"castIds": false}])
 			.then((docs) => {

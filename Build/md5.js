@@ -20,10 +20,11 @@ console.log(link, md5hash);
 	existingDB = await webserver.findOne({"download": /(.)/, "md5": /(.)/})
 	console.log(existingDB)
 	if (existingDB) {
-		webserver.update({"Download": /(.)/, "md5": /(.)/}, {"download": link, "md5": md5hash}, [{"castIds": false}])
+		await webserver.update(existingDB, {"download": link, "md5": md5hash}, [{"castIds": false}])
 	} else {
-		webserver.insert({"download": link, "md5": md5hash}, [{"castIds": false}])
+		await webserver.insert({"download": link, "md5": md5hash})
 			.then((docs) => {
+				console.log(docs)
 			}).catch((err) => {
 				console.log(err);
 			})
