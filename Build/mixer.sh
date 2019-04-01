@@ -1,4 +1,4 @@
-# Dependancies: du, losetup, rsync, gdrive, gzip, pv, mongo
+# Dependancies: du, losetup, rsync, gdrive, zip, pv
 
 lsblk
 read -p 'Select the disk letter /dev/sdX : ' disk1
@@ -15,8 +15,8 @@ size=$(sudo du -cs --block-size=512 /mnt/USB | tail -1)
 size=$(echo ${size} | cut -d ' ' -f1)
 size=$((size+2000000))
 
-cd ~/Image
-sudo dd if=/dev/zero of=~/Image/nOS.img bs=512 count=${size} status=progress
+cd ~/Build/Image
+sudo dd if=/dev/zero of=~/Build/Image/nOS.img bs=512 count=${size} status=progress
 sudo gdisk nOS.img <<EOF
 o
 Y
@@ -46,7 +46,7 @@ y
 EOF
 
 sleep 1
-cd ~/Image
+cd ~/Build/Image
 sudo losetup -fP nOS.img
 loopDevice=$(losetup -a | head -1 | cut -d ' ' -f1 | sed 's/://g')
 if [[ -z ${loopDevice} ]]; then
@@ -87,7 +87,7 @@ sudo umount -l /mnt/destination/ntfs
 sudo umount -l /mnt/destination
 sudo losetup -d ${loopDevice}
 
-cd ~/Image
+cd ~/Build/Image
 
 for ((i = 0; i < 10; i++)); do
   ID=$(gdrive list | grep "nOS.zip" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
@@ -101,11 +101,9 @@ for ((i = 0; i < 10; i++)); do
 done
 echo -e "Done deleting the old version of nOS on the gdrive"
 
-pv -tpre nOS.img | gzip > nOS.zip
+pv nOS.img | zip > nOS.zip
 
 md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
-touch md5hash.txt
-echo ${md5hash} > md5hash.txt
 
 response=''
 while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
