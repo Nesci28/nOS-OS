@@ -42,14 +42,6 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
   }
 
   if (step == "init") {
-    const xorg = fs.readFileSync('/etc/X11/xorg.conf').toString()
-    const xorgNumber = xorg.match(/Option         "Coolbits" "28"/g).length
-    if (xorgNumber < json.Nvidia.GPU.length) {
-      cp.execSync('sudo nvidia-xconfig -a --cool-bits 28')
-      cp.execSync('sudo systemctl reboot')
-    }
-
-
     shell = await shellinabox(step)
     json.Shellinabox = shell.Shellinabox.URL
     power = await powerControl(json, step)
