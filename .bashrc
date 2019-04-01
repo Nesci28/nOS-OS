@@ -18,7 +18,7 @@ if [[ $(tty) == '/dev/tty1' ]]; then
     
     xorgNumber=$(cat /etc/X11/xorg.conf | grep 'Option         "Coolbits" "28"' | wc -l)
     gpuNumber=$(nvidia-smi --qury-gpu=gpu_name --format=noheader,csv | wc -l)
-    if [[ ${xorgNumber} !== ${gpuNumber} ]]; then
+    if [[ ${xorgNumber} != ${gpuNumber} ]]; then
       sudo nvidia-xconfig -a --cool-bits 28
       sudo systemctl reboot
     fi
