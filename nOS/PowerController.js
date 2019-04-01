@@ -18,24 +18,24 @@ module.exports = async function(json, step) {
     let wattCommand = ''
     if (step == "init") {
       if (json.Nvidia.GPU.length > 0) wattCommand = await initialize(json, json.Nvidia.GPU.length, "Nvidia")
-      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
+      if (wattCommand !== '') cp.execSync(wattCommand)
 
       if (json.Amd.GPU.length > 0) wattCommand = await initialize(json, json.Amd.GPU.length, "Amd")
       if (wattCommand !== '') {
         try {
-          cp.execSync('sudo ' + wattCommand)
+          cp.execSync(wattCommand)
         } catch{}
       }
     }
 
     if (step !== "init" && step !== "stop") {
       if (json.Nvidia.GPU.length > 0) wattCommand = await checkCurrent(json, json.Nvidia.GPU.length, "Nvidia")
-      if (wattCommand !== '') cp.execSync('sudo ' + wattCommand)
+      if (wattCommand !== '') cp.execSync(wattCommand)
 
       if (json.Amd.GPU.length > 0) wattCommand = await checkCurrent(json, json.Amd.GPU.length, "Amd")
       if (wattCommand !== '') {
         try {
-          cp.execSync('sudo ' + wattCommand)
+          cp.execSync(wattCommand)
         } catch {}
       }
     }
@@ -53,7 +53,7 @@ module.exports = async function(json, step) {
         if (ocSettings[brand]["Use Hive_OC"]) {     
         let hiveOC = await ocHelper(json[brand]["GPU"][i].Name)
           if (hiveOC !== 'no DB') {
-            if (hiveOC.power_limit) initCommand += `nvidia-smi -i ${i} -pl ${hiveOC.power_limit}; ` 
+            if (hiveOC.power_limit) initCommand += `sudo nvidia-smi -i ${i} -pl ${hiveOC.power_limit}; ` 
             powerStatus["Power"][brand][i] = hiveOC.power_limit
             nextWatt = hiveOC.power_limit
           } else {
@@ -72,7 +72,7 @@ module.exports = async function(json, step) {
         let minWatt = json[brand]["GPU"][i]["Min Watt"].split(' ')[0]
         let maxWatt = json[brand]["GPU"][i]["Max Watt"].split(' ')[0]
         nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
-        initCommand += `nvidia-smi -i ${i} -pl ${nextWatt}; `
+        initCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
       }
 
       if (brand == "Amd") {     
@@ -89,7 +89,7 @@ module.exports = async function(json, step) {
         // check value of maxPower, minWatt and maxWatt
         
         nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
-        initCommand += `./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
+        initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
         if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
       }
 
@@ -110,11 +110,11 @@ module.exports = async function(json, step) {
       if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingserature) {
         nextWatt = json[brand]["GPU"][i]["Watt"] - 5
         if (brand == "Nvidia") {
-          wattCommand += `nvidia-smi -i ${i} -pl ${nextWatt}; `
+          wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
         }
 
         if (brand == "Amd") {
-          wattCommand += `./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
+          wattCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
         }
       }
       if (nextWatt) powerStatus["Power"][brand][i] = nextWatt

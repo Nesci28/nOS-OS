@@ -8,7 +8,7 @@ cat="sd${disk1}"
 sudo mount ${disk}3 /mnt/USB
 
 cd /mnt/USB/home/nos
-git fetch origin master
+git pull origin master
 sudo rm -r .cache
 
 size=$(sudo du -cs --block-size=512 /mnt/USB | tail -1)
