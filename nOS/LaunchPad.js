@@ -28,6 +28,7 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 
 if (process.argv[process.argv.length - 1] !== 'stop' && process.argv[process.argv.length - 1] !== 'gpu') {
   (async() => {
+    await checkXorg()
     await stop()
     await moveConfig()
     let counter = 0
@@ -127,6 +128,16 @@ async function stop() {
         cp.execSync(`kill ${PID}`)
       }
     } catch {} 
+  }
+}
+
+function checkXorg() {
+  xorgNumber = cp.execSync('cat /etc/X11/xorg.conf | grep \'Option         "Coolbits" "28"\' | wc -l').toString().trim()
+  gpuNumber = cp.execSync('nvidia-smi --query-gpu=gpu_name --format=noheader,csv | wc -l').toString().trim()
+
+  if (xorgNumber !== gpuNumber) {
+    cp.execSync('sudo nvidia-xconfig -a --cool-bits 28')
+    cp.execSync('sudo systemctl reboot')
   }
 }
 
