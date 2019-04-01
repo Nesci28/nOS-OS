@@ -1,9 +1,9 @@
 # nOS
 
-``
-Download: https://drive.google.com/open?id=1cY5ZL2H3rUn9C_416sn9zkmjB1Lp2leS
+
+Download: [https://drive.google.com/open?id=1cY5ZL2H3rUn9C_416sn9zkmjB1Lp2leS](https://drive.google.com/open?id=1cY5ZL2H3rUn9C_416sn9zkmjB1Lp2leS)  
 md5: 2d16f6a90e3e0f04aedc706412832a36
-``
+
 
 # Installation
 
@@ -31,11 +31,11 @@ Shellinabox must be running on port: 4200
 
 ### Arch
 #### official repo
-``
+```bash
 sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh nvidia-settings gnu-netcat rxvt-unicode
 ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10
 sudo npm install -g pm2
-``
+```
 
 #### aur
 ```bash
@@ -76,7 +76,7 @@ WIP
 - If __Use HiveOC__ is set to false, the __Powerlimit %__ is calculated with this formula :
 
 
-```
+```javascript
 Formulas for power limit percentage :
 Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
 

@@ -99,16 +99,16 @@ module.exports = async function(json, step) {
 
   function checkCurrent(json, gpuNumber, brand) {
     let maxFanSpeed = ocSettings[brand]["Max FanSpeed"]
-    let ocSettingserature = ocSettings[brand]["Max Temperature"] + 3
+    let ocSettingMax = ocSettings[brand]["Max Temperature"] + 3
     let wattCommand = ''
     let nextWatt
 
     for (var i = 0; i < gpuNumber; i++) {
-      let currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"]
+      let currentFanSpeed = Number(json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, ''))
       let currentTemp = json[brand]["GPU"][i]["Temperature"]
       
-      if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingserature) {
-        nextWatt = json[brand]["GPU"][i]["Watt"] - 5
+      if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingMax) {
+        nextWatt = json[brand]["GPU"][i]["Watt"].split('.')[0] - 5
         if (brand == "Nvidia") {
           wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
         }

@@ -1,4 +1,4 @@
-# Dependancies: du, losetup, rsync, gdrive, zip, pv
+# Dependancies: du, losetup, rsync, gdrive, p7zip
 
 lsblk
 read -p 'Select the disk letter /dev/sdX : ' disk1
@@ -109,7 +109,7 @@ for ((i = 0; i < 10; i++)); do
 done
 echo -e "Done deleting the old version of nOS on the gdrive"
 
-pv nOS.img | zip > nOS.zip
+7z a nOS.zip nOS.img
 
 md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
 
@@ -138,7 +138,7 @@ cd ~/Build
 node md5.js "https://drive.google.com/open?id=${ID}" "${md5hash}"
 
 cd ~
-sed -i "/Download:/c\Download: https://drive.google.com/open?id=${ID}" README.md
+sed -i "/Download:/c\Download: [https://drive.google.com/open?id=${ID}](https://drive.google.com/open?id=${ID})  " README.md
 sed -i "/md5:/c\md5: ${md5hash}" README.md
 
 git add README.md

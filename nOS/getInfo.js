@@ -145,8 +145,7 @@ module.exports = function(step, json = '') {
 		let avgTemperature = 0
 		for (let i = 0; i < json[brand]["GPU"].length; i++) {
 			if (json[brand]["GPU"][i]["Temperature"] !== null) {
-				avgTemperature += json[brand]["GPU"][i]["Temperature"]
-				
+				avgTemperature += Number(json[brand]["GPU"][i]["Temperature"].replace(/\D/g, ''))
 			}
 		}
 		json[brand]["Avg Temperature"] = (avgTemperature / json[brand]["GPU"].length).toFixed(2) + " °C"

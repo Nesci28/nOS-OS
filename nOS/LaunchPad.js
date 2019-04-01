@@ -4,6 +4,7 @@ const cp = require('child_process');
 const util = require('util');
 const md5File = require('md5-file');
 const mv = require('mv');
+const wifi = require('node-wifi');
 
 // Requirements
 const info = require('./getInfo.js');
@@ -15,6 +16,7 @@ const watchdog = require('./WatchDog.js');
 const DB = require('./DB.js');
 const shellinabox = require('./shellinabox.js')
 // const showUI = require('./UI.js');
+const systemConfig = require('../SystemConfig.json');
 
 let minerName = ["minerNvidia", "minerAmd", "minerCpu"]
 
@@ -28,6 +30,9 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 
 if (process.argv[process.argv.length - 1] !== 'stop' && process.argv[process.argv.length - 1] !== 'gpu') {
   (async() => {
+    if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
+      network = await connection(systemConfig["Wifi Name"], systemConfig["Wifi Password"])
+    }
     await checkXorg()
     await moveConfig()
     let counter = 0
@@ -130,6 +135,25 @@ async function stop() {
       }
     } catch {} 
   }
+}
+
+async function connection(ssid, password) {
+  require('dns').resolve('www.google.com', async function(err) {
+    if (err) {
+      console.log("No connection");
+      await wifi.init({
+        iface : null // network interface, choose a random wifi interface if set to null
+      });
+      await wifi.connect({ ssid : ssid, password : password}, function(err) {
+        if (err) {
+          console.log(err);
+        }
+        return "connected"
+      });
+    } else {
+      return "Connected"
+    }
+  });
 }
 
 function checkXorg() {
