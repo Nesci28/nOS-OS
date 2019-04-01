@@ -41,7 +41,7 @@ module.exports = async function(json, step) {
 
     for (let i = 0; i < gpuNumber; i++) {
       if (brand == "Nvidia") {
-        if (initCommand == '') stopCommand += 'sudo nvidia-settings '
+        if (initCommand == '') initCommand += 'sudo nvidia-settings '
         initCommand += '-a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=80 '
       }
       if (brand == "Amd") {

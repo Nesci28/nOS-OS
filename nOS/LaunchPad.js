@@ -29,7 +29,6 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 if (process.argv[process.argv.length - 1] !== 'stop' && process.argv[process.argv.length - 1] !== 'gpu') {
   (async() => {
     await checkXorg()
-    await stop()
     await moveConfig()
     let counter = 0
     await launchPad('init', counter)

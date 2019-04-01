@@ -33,7 +33,7 @@ module.exports = async function(json, existingDB = '') {
 	console.log('getting push to the DB', json)
 
 	if (existingDB.length > 0) {
-		await webserver.update(existingDB, json, [{"castIds": false}])
+		await webserver.update(existingDB[0], json, [{"castIds": false}])
 	} else {
 		await webserver.insert(json, [{"castIds": false}])
 			.then((docs) => {

@@ -32,3 +32,5 @@ Image/
 image/
 .gdrive
 .node-gyp/
+.bashrc
+.xinitrc
