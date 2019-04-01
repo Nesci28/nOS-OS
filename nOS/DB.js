@@ -25,15 +25,17 @@ module.exports = async function(json, existingDB = '') {
 	if (existingDB == '') {
 		existingDB = await webserver.find({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]})
 	}
-	checkForNewConfigs(existingDB)
+	await checkForNewConfigs(existingDB)
 	sendToDBStatus["DB"]["Entry"] = existingDB
 	sendToDBStatus["DB"]["Status"] = await setID(existingDB, json).status
 	json = await setID(existingDB, json).json
 	
+	console.log('getting push to the DB', json)
+
 	if (existingDB.length > 0) {
-		webserver.update(existingDB, json, [{"castIds": false}])
+		await webserver.update(existingDB, json, [{"castIds": false}])
 	} else {
-		webserver.insert(json, [{"castIds": false}])
+		await webserver.insert(json, [{"castIds": false}])
 			.then((docs) => {
 			}).catch((err) => {
 				console.log(err);

@@ -20,41 +20,7 @@ let minerName = ["minerNvidia", "minerAmd", "minerCpu"]
 
 if (process.argv[process.argv.length - 1] == 'stop') {
   (async() => {
-    let json = await info('stop')
-
-    if (json.Nvidia.GPU.length > 0) {
-      let overclocks = await ocControl(json, "stop")
-      console.log(overclocks)
-    }
-
-    let temperature = await tempControl(json, "stop")
-    console.log(temperature)
-
-    let shell = await shellinabox('stop')
-    console.log(shell)
-
-    cp.execSync('pm2 kill')
-    cp.execSync('rm -rf ~/.pm2/logs/*')
-    cp.execSync('pm2 flush')
-
-    let pm2List = cp.execSync('ps aux | grep "pm2 logs 0" | grep "node" | sed \'s/  */ /g\' | cut -d \' \' -f2')
-    pm2List = pm2List.toString().trim().split('\n')
-    for (let ID of pm2List) {
-      try {
-        cp.execSync(`kill ${ID}`)
-      }
-      catch {}
-    }
-
-    for (let name of minerName) {
-      try {
-        let PID = cp.execSync(`screen -ls ${name}`).toString().trim().split("\n")[1].trim().split('.')[0]
-        if (PID) {
-          console.log(`Closing ${name}...`)
-          cp.execSync(`kill ${PID}`)
-        }
-      } catch {} 
-    }
+    await stop()
     process.stdout.write('\033c');
     process.exit()
   })()
@@ -62,6 +28,7 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 
 if (process.argv[process.argv.length - 1] !== 'stop' && process.argv[process.argv.length - 1] !== 'gpu') {
   (async() => {
+    await stop()
     await moveConfig()
     let counter = 0
     await launchPad('init', counter)
@@ -131,6 +98,44 @@ if (process.argv[process.argv.length - 1] == 'gpu') {
     let json = await info('init')
     console.log(json.Amd.GPU)
   })()
+}
+
+async function stop() {
+  let json = await info('stop')
+
+  if (json.Nvidia.GPU.length > 0) {
+    let overclocks = await ocControl(json, "stop")
+    console.log(overclocks)
+  }
+
+  let temperature = await tempControl(json, "stop")
+  console.log(temperature)
+
+  let shell = await shellinabox('stop')
+  console.log(shell)
+
+  cp.execSync('pm2 kill')
+  cp.execSync('rm -rf ~/.pm2/logs/*')
+  cp.execSync('pm2 flush')
+
+  let pm2List = cp.execSync('ps aux | grep "pm2 logs 0" | grep "node" | sed \'s/  */ /g\' | cut -d \' \' -f2')
+  pm2List = pm2List.toString().trim().split('\n')
+  for (let ID of pm2List) {
+    try {
+      cp.execSync(`kill ${ID}`)
+    }
+    catch {}
+  }
+
+  for (let name of minerName) {
+    try {
+      let PID = cp.execSync(`screen -ls ${name}`).toString().trim().split("\n")[1].trim().split('.')[0]
+      if (PID) {
+        console.log(`Closing ${name}...`)
+        cp.execSync(`kill ${PID}`)
+      }
+    } catch {} 
+  }
 }
 
 function moveConfig() {
