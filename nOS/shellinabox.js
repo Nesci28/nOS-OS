@@ -1,6 +1,9 @@
 module.exports = async function(step) {
   // Dependancies
   const ngrok = require('ngrok');
+  const cp = require('child_process');
+
+  const systemConfigs = require('../SystemConfig.json');
 
 	const shellinabox = {
 		"Shellinabox": {
@@ -8,14 +11,26 @@ module.exports = async function(step) {
 		}
 	};
 
-  if (step == "shellinabox" || step == 'stop') {
-    await ngrok.disconnect();
-    await ngrok.kill();
-    shellinabox.Shellinabox.URL = 'Stopped'
-  }
+  if (systemConfigs.Shellinabox) {
+    try {
+      var shellIsRunning = cp.execSync('ps aux | grep "[s]hellinaboxd"')
+    } catch {
+      var shellIsRunning = false 
+    }
 
-  if (step !== 'stop') {
-    shellinabox.Shellinabox.URL = await ngrok.connect(4200);
+    if (!shellIsRunning) cp.execSync('shellinaboxd &')
+    
+    if (step == "shellinabox" || step == 'stop') {
+      await ngrok.disconnect();
+      await ngrok.kill();
+      shellinabox.Shellinabox.URL = 'Stopped'
+    }
+  
+    if (step !== 'stop') {
+      shellinabox.Shellinabox.URL = await ngrok.connect(4200);
+    }
+
   }
+  
   return shellinabox
 }

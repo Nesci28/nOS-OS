@@ -30,10 +30,8 @@ module.exports = async function(json, existingDB = '') {
 	sendToDBStatus["DB"]["Status"] = await setID(existingDB, json).status
 	json = await setID(existingDB, json).json
 	
-	console.log('getting push to the DB', json)
-
 	if (existingDB.length > 0) {
-		await webserver.update(existingDB[0], json, [{"castIds": false}])
+		await webserver.update({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]}, json, [{"castIds": false}])
 	} else {
 		await webserver.insert(json, [{"castIds": false}])
 			.then((docs) => {
@@ -65,8 +63,6 @@ module.exports = async function(json, existingDB = '') {
 	}
 
 	function setID(existingDB, json) {
-		json["Old Time"] = json["New Time"]
-		json["New Time"] = new Date().getTime()
 		if (existingDB.length == 0) {
 			json["_id"] = monk.id()
 			return {

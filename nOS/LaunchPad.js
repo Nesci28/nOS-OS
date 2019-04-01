@@ -48,9 +48,10 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
     overclocks = await ocControl(json, step)
     coin = await coins(json)
     cp.execSync('urxvt -e ./tmux.sh && exit &')
-    database = await DB(json, existingDB)
+    database = await DB(json, '')
   }
 
+  
   if (step == "init" || step == "running") {
     var temperature = await tempControl(json, step)
     var watch = await watchdog(json, step)
@@ -58,6 +59,7 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
   
   if (step == "running") {
     var existingDB = database.DB.Entry
+    database = await DB(json, existingDB)
   }
 
   if (counter == 480) {

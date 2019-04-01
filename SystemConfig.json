@@ -10,6 +10,7 @@
   "Wifi Name": "",
   "Wifi Password": "",
 
+  "Shellinabox": true,
   "EthPill": false,
   "Serial": 1
 }

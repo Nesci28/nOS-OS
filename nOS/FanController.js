@@ -103,15 +103,25 @@ module.exports = async function(json, step) {
             }
           }
         } else if (infos[brand]["GPU"][i.toString()]["Temperature"] > maxTemperature) {
-          if (currentFanSpeed <= maxFanSpeed - 5) {
-            if (brand == "Nvidia") {
+          if (brand == "Nvidia") {
+            if (currentFanSpeed <= maxFanSpeed - 5) {
               if (fanCommand == '') fanCommand += 'sudo nvidia-settings '
               fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed + 5} `
               gpuTemperature[i] = currentFanSpeed + 5
+            } else {
+              if (fanCommand == '') fanCommand += 'sudo nvidia-settings '
+              fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${maxFanSpeed} `
+              gpuTemperature[i] = maxFanSpeed + " Max"
             }
+
             if (brand == "Amd") {
-              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)}; `
-              gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed + 5)
+              if (currentFanSpeed <= maxFanSpeed - 5) {
+                fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)}; `
+                gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed + 5)
+              } else {
+                fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(maxFanSpeed)}; `
+                gpuTemperature[i] = maxFanSpeed + " Max"
+              }     
             }
           }
         } else {

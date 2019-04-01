@@ -11,6 +11,14 @@ cd /mnt/USB/home/nos
 git pull origin master
 sudo rm -r .cache
 
+cd ~
+sudo cp .xinitrc /mnt/USB/home/nos/.xinitrc
+sudo cp .bashrc /mnt/USB/home/nos/.bashrc
+sudo cp SystemConfig.json /mnt/USB/home/nos/SystemConfig.json
+sudo cp CoinsConfig.json /mnt/USB/home/nos/CoinsConfig.json
+sudo cp Overclocks.json /mnt/USB/home/nos/Overclocks.json
+cd /mnt/USB/home/nos
+
 size=$(sudo du -cs --block-size=512 /mnt/USB | tail -1)
 size=$(echo ${size} | cut -d ' ' -f1)
 size=$((size+2000000))

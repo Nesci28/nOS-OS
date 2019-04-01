@@ -116,25 +116,25 @@ module.exports = async function(json) {
 
 		if (gpuType == "Nvidia"){
 			processName = "minerNvidia"
-			screenRcm = "../Logs/minerNvidia.txt"
-			screenRcmBck = "../Logs/backups/minerNvidia.txt"
+			// screenRcm = "../Logs/minerNvidia.txt"
+			// screenRcmBck = "../Logs/backups/minerNvidia.txt"
 		} else if (gpuType == "Amd") {
 			processName = "minerAmd"
-			screenRcm = "../Logs/minerAmd.txt"
-			screenRcmBck = "../Logs/backups/minerAmd.txt"
+			// screenRcm = "../Logs/minerAmd.txt"
+			// screenRcmBck = "../Logs/backups/minerAmd.txt"
 		} else {
 			processName = "minerCpu"
-			screenRcm = "../Logs/minerCpu.txt"
-			screenRcmBck = "../Logs/backups/minerCpu.txt"
+			// screenRcm = "../Logs/minerCpu.txt"
+			// screenRcmBck = "../Logs/backups/minerCpu.txt"
 		}
 
-		if (fs.existsSync(screenRcm)) {
-			fs.rename(screenRcm, screenRcmBck, function (err) {
-				if (err) throw err;
-			});
-		}
+		// if (fs.existsSync(screenRcm)) {
+		// 	fs.rename(screenRcm, screenRcmBck, function (err) {
+		// 		if (err) throw err;
+		// 	});
+		// }
 
-		return `screen -L -Logfile ${screenRcm} -dmS ${processName} ${json[gpuType]["Coin Info"]["command"]}`
+		return `screen -dmS ${processName} ${json[gpuType]["Coin Info"]["command"]}`
 	}
 
 	// Check if the screen as been created

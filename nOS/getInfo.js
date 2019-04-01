@@ -64,10 +64,10 @@ module.exports = function(step, json = '') {
 		}
 	}
 
-	return main(step)
+	return main(step, json)
 
 	// main
-	async function main(step) {
+	async function main(step, json) {
 		json["Old Time"] = json["New Time"]
 		json["New Time"] = new Date().getTime()
 		json["Runtime"] = json["New Time"] - json["Runtime Start"]
@@ -216,13 +216,9 @@ module.exports = function(step, json = '') {
 		json[gpuType]["Coin Info"]["password2"] = coinsConfig[gpuType][coin]["Alternative Password"]
 	}
 
-	async function getMinerLog(brand) {
-		if (fs.existsSync(`../Logs/miner${brand}.txt`)) {
-			return readLastLine.read(`../Logs/miner${brand}.txt`, 75).then(function (lines) {
-				return lines
-			}).catch(function (err) {
-				console.log(err.message);
-			});
-		}
+	async function getMinerLog() {
+		try {
+			return cp.execSync('tmux capture-pane -pS 40').toString()
+		} catch {}
 	}
 }

@@ -1,7 +1,9 @@
 # nOS
 
+``
 Download: https://drive.google.com/open?id=17j3p28u4mB2ZjzG0YGv5KsjqBY0zMEY5
 md5: 056b28ac565c3e4be7f6bee8ee8be15c
+``
 
 # Installation
 
@@ -20,6 +22,11 @@ git clone https://github.com/Nesci28/rice.git
 | __libmicrohttpd__ 	| __curl__        	| __pm2 (npm)__       |
 | __tmux__          	| __rxvt-unicode__  |                     |
 
+__Don't forget to change the default root and user password if shellinabox is activated !!!__
+```bash
+passwd
+sudo passwd
+```
 Shellinabox must be running on port: 4200
 
 ### Arch
