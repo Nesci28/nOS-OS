@@ -77,17 +77,13 @@ module.exports = async function(json, step) {
 
       if (brand == "Amd") {     
         try {
-          cp.execSync('sudo ./helpers/ROC-smi/rocm-smi -d 0 --setpoweroverdrive 100000 --autorespond yes').toString()
+          cp.execSync(`sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive 100000 --autorespond yes`).toString()
         } catch(ex) {
-          var maxPower = ex.stdout.toString()
-          maxPower = parseInt(maxPower.match(/than (.*)W/)[1])
+          var maxWatt = ex.stdout.toString()
+          maxWatt = parseInt(maxWatt.match(/than (.*)W/)[1])
         }
 
-        let minWatt = (maxPower / 2).toFixed(0)
-        let maxWatt = maxPower
-        
-        // check value of maxPower, minWatt and maxWatt
-        
+        let minWatt = (maxWatt / 2).toFixed(0)       
         nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
         initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
         if (nextWatt) powerStatus["Power"][brand][i] = nextWatt

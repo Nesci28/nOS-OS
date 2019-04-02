@@ -19,18 +19,21 @@ if (process.argv[process.argv.length - 1] == 'stats') {
 if (process.argv[process.argv.length - 1] == 'stop') {
   console.log('Turning OFF nOS')
   kill()
+  process.exit()
 }
 
 if (process.argv[process.argv.length - 1] == 'start') {
   console.log('Turning ON nOS')
   kill()
   cp.execSync(`cd ${findnOS()}; pm2 start LaunchPad.js -- init`)
+  process.exit()
 }
 
 if (process.argv[process.argv.length - 1] == 'miner') {
   (async() => {
     console.log(cp.execSync('tmux capture-pane -pS 40 -e').toString())
   })()
+  process.exit()
 }
 
 

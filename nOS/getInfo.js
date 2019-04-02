@@ -1,17 +1,16 @@
 module.exports = function(step, json = '') {
 	// Dependancies
-	const cp = require('child_process')
-	const ip = require('ip')
-	const readLastLine = require('read-last-line');
-	const fs = require('fs');
+	const cp = require('child_process');
+	const ip = require('ip');
 
-	const nvidiaGPU = require('./helpers/gpu.js')
-	const amdGPU = require('./helpers/amd_rocm_parser.js')
+	const nvidiaGPU = require('./helpers/gpu.js');
+	const amdGPU = require('./helpers/amd_rocm_parser.js');
+	const amdTweak = require('./helpers/amd_mem_tweak_parse.js');
 
 	// Parsers
-	const systemConfig = require('../SystemConfig.json')
-	const coinsConfig = require('../CoinsConfig.json')
-	const overclocksConfig = require('../Overclocks.json')
+	const systemConfig = require('../SystemConfig.json');
+	const coinsConfig = require('../CoinsConfig.json');
+	const overclocksConfig = require('../Overclocks.json');
 
 	// GPU Setup
 	const setType = []
@@ -119,7 +118,7 @@ module.exports = function(step, json = '') {
 					gpuObject["Min Watt"] = gpu[11]
 					gpuObject["Max Watt"] = gpu[12]
 					gpuObject["Fan Speed"] = gpu[5]
-					gpuObject["Name"] = gpu[7]	
+					gpuObject["Name"] = gpu[7]
 					json["Nvidia"]["GPU"].push(gpuObject)
 				}
 			})
@@ -129,6 +128,7 @@ module.exports = function(step, json = '') {
 			json["Amd"]["GPU"] = []
 			let amdRocm = cp.execSync('./helpers/ROC-smi/rocm-smi');
 			let amdStats = amdGPU(amdRocm.toString())
+			let amdMem = await amdTweak(cp.execSync('sudo ./helpers/amdmemtweak --current').toString())
 			for (let i = 0; i < amdStats["gpus"].length; i++) {
 				let gpuObject = clearVars()
 				gpuObject["Utilization"] = amdStats["gpus"][i]["utilization"]
@@ -137,6 +137,7 @@ module.exports = function(step, json = '') {
 				gpuObject["Temperature"] = amdStats["gpus"][i]["temp"]
 				gpuObject["Watt"] = amdStats["gpus"][i]["pwr"]
 				gpuObject["Fan Speed"] = amdStats["gpus"][i]["fan"]
+				gpuObject["Memory Timings"] = amdMem[i]
 				// gpuObject["Name"] = amdStats["gpus"][i][7]
 				json["Amd"]["GPU"].push(gpuObject)
 			}
@@ -145,7 +146,7 @@ module.exports = function(step, json = '') {
 		let avgTemperature = 0
 		for (let i = 0; i < json[brand]["GPU"].length; i++) {
 			if (json[brand]["GPU"][i]["Temperature"] !== null) {
-				avgTemperature += Number(json[brand]["GPU"][i]["Temperature"].replace(/\D/g, ''))
+				avgTemperature += Number(json[brand]["GPU"][i]["Temperature"].toString().replace(/\D/g, ''))
 			}
 		}
 		json[brand]["Avg Temperature"] = (avgTemperature / json[brand]["GPU"].length).toFixed(2) + " °C"
@@ -185,7 +186,8 @@ module.exports = function(step, json = '') {
 			"Max Watt": null,
 			"Fan Speed": null,
 			"Name": null,
-			"Hashrate": null
+			"Hashrate": null,
+			"Memory Timings": {}
 		}
 
 		return gpuObject

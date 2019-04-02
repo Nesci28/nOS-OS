@@ -92,10 +92,12 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
   }, 15000)
 }
 
-if (process.argv[process.argv.length - 1] == 'gpu') {
+if (process.argv[process.argv.length - 2] == 'gpu') {
   (async() => {
     let json = await info('init')
-    console.log(json.Amd.GPU)
+    if (process.argv[process.argv.length - 1] == 'nvidia') console.log(json.Nvidia.GPU)
+    if (process.argv[process.argv.length - 1] == 'amd') console.log(json.Amd.GPU)
+    process.exit()
   })()
 }
 
@@ -157,12 +159,15 @@ async function connection(ssid, password) {
 }
 
 function checkXorg() {
-  xorgNumber = cp.execSync('cat /etc/X11/xorg.conf | grep \'Option         "Coolbits" "28"\' | wc -l').toString().trim()
-  gpuNumber = cp.execSync('nvidia-smi --query-gpu=gpu_name --format=noheader,csv | wc -l').toString().trim()
+  const lspci = cp.execSync("lspci | grep VGA").toString().trim()
+	if (/NVIDIA/.test(lspci)) {
+    xorgNumber = cp.execSync('cat /etc/X11/xorg.conf | grep \'Option         "Coolbits" "28"\' | wc -l').toString().trim()
+    gpuNumber = cp.execSync('nvidia-smi --query-gpu=gpu_name --format=noheader,csv | wc -l').toString().trim()
 
-  if (xorgNumber !== gpuNumber) {
-    cp.execSync('sudo nvidia-xconfig -a --cool-bits 28')
-    cp.execSync('sudo systemctl reboot')
+    if (xorgNumber !== gpuNumber) {
+      cp.execSync('sudo nvidia-xconfig -a --cool-bits 28')
+      cp.execSync('sudo systemctl reboot')
+    }
   }
 }
 

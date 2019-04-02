@@ -10,7 +10,7 @@
   "Amd": {
     "Max Temperature": 60,
     "Max FanSpeed": 95,
-    "Powerlevel_%": 100
+    "Powerlevel_%": 75
   },
 
   "Serial": 1
