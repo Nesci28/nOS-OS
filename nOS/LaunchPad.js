@@ -28,7 +28,7 @@ if (process.argv[process.argv.length - 1] == 'stop') {
   })()
 }
 
-if (process.argv[process.argv.length - 1] !== 'stop' && process.argv[process.argv.length - 1] !== 'gpu') {
+if (process.argv[process.argv.length - 1] == 'init') {
   (async() => {
     if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
       network = await connection(systemConfig["Wifi Name"], systemConfig["Wifi Password"])
