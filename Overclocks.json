@@ -11,8 +11,6 @@
     "Max Temperature": 60,
     "Max FanSpeed": 95,
     "Powerlevel_%": 75
-    "Mod bios": true,
-    "Memory Type": ["elpida", "hynix_1"]
   },
 
   "Serial": 1

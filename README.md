@@ -1,8 +1,8 @@
 # nOS
 
 
-Download: [https://drive.google.com/open?id=1ncL_9ChKz3XJu0ReEeHGZZDwY-MOAgtA](https://drive.google.com/open?id=1ncL_9ChKz3XJu0ReEeHGZZDwY-MOAgtA)  
-md5: 9daa56384370519fb6bf9a09ed23726a
+Download: [https://drive.google.com/open?id=1NxaUzQXykR71Tesdk0yuh4oe5pq6aHLz](https://drive.google.com/open?id=1NxaUzQXykR71Tesdk0yuh4oe5pq6aHLz)  
+md5: df1c79adb5825b62d09fab307ab7cc04
 
 
 # Installation

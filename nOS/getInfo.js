@@ -5,7 +5,7 @@ module.exports = function(step, json = '') {
 
 	const nvidiaGPU = require('./helpers/gpu.js');
 	const amdGPU = require('./helpers/amd_rocm_parser.js');
-	const amdTweak = require('./helpers/amd_mem_tweak_parse.js');
+	const amdTweak = require('./helpers/amd_mem_tweak_parser.js');
 
 	// Parsers
 	const systemConfig = require('../SystemConfig.json');
