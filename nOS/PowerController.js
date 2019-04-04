@@ -98,9 +98,9 @@ module.exports = async function(json, step, powerStatus = '') {
     let maxFanSpeed = ocSettings[brand]["Max FanSpeed"]
     let ocSettingMax = ocSettings[brand]["Max Temperature"] + 3
     let wattCommand = ''
-    let nextWatt
-
+    
     for (var i = 0; i < gpuNumber; i++) {
+      let nextWatt
       let currentFanSpeed = Number(json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, ''))
       let currentTemp = json[brand]["GPU"][i]["Temperature"]
       let minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].replace(/ W/, ''))
