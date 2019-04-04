@@ -63,6 +63,9 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
   }
   
   if (step == "running") {
+    if (couter % 2 == 0) {
+      power = await powerControl(json, step)
+    }
     var existingDB = database.DB.Entry
     database = await DB(json, existingDB)
   }
