@@ -1,4 +1,4 @@
-module.exports = async function(json, step) {
+module.exports = async function(json, step, power = '') {
   // Dependancies
   const cp = require('child_process');
 
@@ -6,13 +6,14 @@ module.exports = async function(json, step) {
   const ocHelper = require('./helpers/HiveOverclocksAPI.js');
   const ocSettings = require('../Overclocks.json');
 
-  let powerStatus = {
-    "Power": {
-      "Nvidia": [],
-      "Amd": []
-    }
-  };
-
+  if (power == '') {
+    var powerStatus = {
+      "Power": {
+        "Nvidia": [],
+        "Amd": []
+      }
+    };
+  }
 
   return (async () => {
     let wattCommand = ''
@@ -114,7 +115,7 @@ module.exports = async function(json, step) {
         }
       }
       if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
-      else powerStatus["Power"][brand][i] = json[brand]["GPU"][i]["Watt"]
+      // else powerStatus["Power"][brand][i] = parseInt(json[brand]["GPU"][i]["Watt"].replace(/W /, ''))
     }
   
     return wattCommand
