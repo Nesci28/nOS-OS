@@ -1,4 +1,4 @@
-module.exports = async function(json, step, power = '') {
+module.exports = async function(json, step, powerStatus = '') {
   // Dependancies
   const cp = require('child_process');
 
@@ -6,8 +6,8 @@ module.exports = async function(json, step, power = '') {
   const ocHelper = require('./helpers/HiveOverclocksAPI.js');
   const ocSettings = require('../Overclocks.json');
 
-  if (power == '') {
-    var powerStatus = {
+  if (powerStatus == '') {
+    powerStatus = {
       "Power": {
         "Nvidia": [],
         "Amd": []
@@ -103,17 +103,21 @@ module.exports = async function(json, step, power = '') {
     for (var i = 0; i < gpuNumber; i++) {
       let currentFanSpeed = Number(json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, ''))
       let currentTemp = json[brand]["GPU"][i]["Temperature"]
-      
+      let minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].replace(/ W/, ''))
+
       if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingMax) {
         nextWatt = json[brand]["GPU"][i]["Watt"].split('.')[0] - 5
-        if (brand == "Nvidia") {
-          wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
-        }
+        if (nextWatt >= minWatt) {
+          if (brand == "Nvidia") {
+            wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
+          }
 
-        if (brand == "Amd") {
-          wattCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
+          if (brand == "Amd") {
+            wattCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
+          }
         }
       }
+
       if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
       // else powerStatus["Power"][brand][i] = parseInt(json[brand]["GPU"][i]["Watt"].replace(/W /, ''))
     }
