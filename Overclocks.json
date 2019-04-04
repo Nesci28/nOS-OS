@@ -1,7 +1,7 @@
 {
   "Nvidia": {
-    "Max Temperature": 20,
-    "Max FanSpeed": 20,
+    "Max Temperature": 69,
+    "Max FanSpeed": 80,
     "Use Hive_OC": true,
     "Powerlevel_%": 70,
     "CoreClock": 50,
