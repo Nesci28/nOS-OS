@@ -1,12 +1,15 @@
 // Dependancies
 const cp = require('child_process');
 
+const getInfo = require('./getInfo.js');
+
 if (process.argv[process.argv.length - 1] == 'help') {
   console.log("help   : shows this commands list\n")
   console.log("stats  : shows the streaming information of the system")
+  console.log("miner  : shows the log of the miners")
+  console.log("hash   : shows the current hashrate") 
   console.log("stop   : stops nOS and the miners")
   console.log("start  : starts nOS and the miners")
-  console.log("miner  : shows the log of the miners")
 }
 
 if (process.argv[process.argv.length - 1] == 'stats') {
@@ -31,11 +34,21 @@ if (process.argv[process.argv.length - 1] == 'start') {
 
 if (process.argv[process.argv.length - 1] == 'miner') {
   (async() => {
-    console.log(cp.execSync('tmux capture-pane -pS 40 -e').toString())
+    let tmux = await cp.execSync('tmux has-sessions -t miners 2>/dev/null; echo $?').toString().trim()
+    if (tmux == 0) console.log(cp.execSync('tmux capture-pane -pS 40 -e').toString())
   })()
   process.exit()
 }
 
+if (process.argv[process.argv.length - 1] == 'hash') {
+  (async() => {
+    let json = await getInfo()
+    if (json.Nvidia.GPU.length > 0) console.log(json.Nvidia["Total Hashrate"])
+    if (json.Amd.GPU.length > 0) console.log(json.Amd["Total Hashrate"])
+    if (json.CPU["Total Hashrate"]) console.log(json.CPU["Total Hashrate"])
+    process.exit()
+  })()
+}
 
 function kill() {
   cp.execSync(`cd ${findnOS()}; node LaunchPad.js stop`)

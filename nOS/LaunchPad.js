@@ -43,7 +43,7 @@ if (process.argv[process.argv.length - 1] == 'init') {
 async function launchPad(step, counter, coin, power, overclocks, database = '', json = '', shell = '') {
   if (step !== "shellinabox") {
     process.stdout.write('\033c');
-    json = await info(step, json)
+    json = await info(step, json, counter)
   }
 
   if (step == "init") {

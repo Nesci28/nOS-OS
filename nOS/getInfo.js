@@ -31,6 +31,8 @@ module.exports = function(step, json = '') {
 			"Hostname" : systemConfig["Rig Hostname"],
 			"IP": ip.address(),
 			"Shellinabox": null,
+			"Local GitHash": null,
+			"Remote GitHash": null,
 			"Nvidia": {
 				"Coin": null,
 				"Algo": null,
@@ -66,10 +68,20 @@ module.exports = function(step, json = '') {
 	return main(step, json)
 
 	// main
-	async function main(step, json) {
+	async function main(step, json, counter) {
 		json["Old Time"] = json["New Time"]
 		json["New Time"] = new Date().getTime()
 		json["Runtime"] = json["New Time"] - json["Runtime Start"]
+		if (counter == 0 || counter == 480) {
+			json["Local GitHash"] = cp.execSync('git rev-parse HEAD')
+			json["Remote GitHash"] = cp.execSync('git ls-remote https://github.com/Nesci28/nOS.git | head -1 | cut -f1 -d$\'\t\'')
+			if (json["Local GitHash"] !== json["Remote GitHash"]) {
+				cp.execSync('nosFolder=$(find /home -type d -name nOS 2>/dev/null; cd ${nosFolder}; git stash && git pull origin master && git stash pop')
+				console.log('Updated nOS to the latest Version.')
+			} else {
+				console.log('This version of nOS is currently the latest.')
+			}
+		}
 
 		if (systemConfig["Nvidia Coin"] && setType[0]) {
 			if (step == 'init') await getCoins('Nvidia')
@@ -129,6 +141,7 @@ module.exports = function(step, json = '') {
 			let amdRocm = cp.execSync('./helpers/ROC-smi/rocm-smi');
 			let amdStats = amdGPU(amdRocm.toString())
 			let amdMem = await amdTweak(cp.execSync('sudo ./helpers/amdmemtweak --current').toString())
+			let amdName = cp.execSync('sudo ./helpers/amdmeminfo -q -s | cut -d \':\' -f3 | sed \'s/Radeon //g\'').toString().trim().split("\n")
 			for (let i = 0; i < amdStats["gpus"].length; i++) {
 				let gpuObject = clearVars()
 				gpuObject["Utilization"] = amdStats["gpus"][i]["utilization"]
@@ -138,6 +151,7 @@ module.exports = function(step, json = '') {
 				gpuObject["Watt"] = amdStats["gpus"][i]["pwr"]
 				gpuObject["Fan Speed"] = amdStats["gpus"][i]["fan"]
 				gpuObject["Memory Timings"] = amdMem[i]
+				gpuObject["Name"] = amdName[i]
 				// gpuObject["Name"] = amdStats["gpus"][i][7]
 				json["Amd"]["GPU"].push(gpuObject)
 			}
@@ -219,7 +233,8 @@ module.exports = function(step, json = '') {
 
 	async function getMinerLog() {
 		try {
-			return cp.execSync('tmux capture-pane -pS 40').toString()
+			let tmux = await cp.execSync('tmux has-sessions -t miners 2>/dev/null; echo $?').toString().trim()
+			if (tmux == 0) return cp.execSync('tmux capture-pane -pS 40').toString()
 		} catch {}
 	}
 }

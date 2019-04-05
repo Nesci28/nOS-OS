@@ -88,7 +88,7 @@ module.exports = async function(json, step) {
 
       for (let i = 0; i < infos[brand]["GPU"].length; i++) {
         if (brand == "Nvidia") currentFanSpeed = Number(infos[brand]["GPU"][i]["Fan Speed"].split(' ')[0])
-        if (brand == "Amd") currentFanSpeed = Number(infos[brand]["GPU"][i]["Fan Speed"].toString().split('.')[0])
+        if (brand == "Amd") currentFanSpeed = infos[brand]["GPU"][i]["Fan Speed"]
         
         if (infos[brand]["GPU"][i.toString()]["Temperature"] < minTemperature) {
           if (currentFanSpeed >= 21) { 
@@ -99,7 +99,7 @@ module.exports = async function(json, step) {
             }
             if (brand == "Amd") {
               fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed - 5)}; `
-              gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed - 5)
+              gpuTemperature[i] = currentFanSpeed - 5
             }
           }
         } else if (infos[brand]["GPU"][i.toString()]["Temperature"] > maxTemperature) {
@@ -113,18 +113,20 @@ module.exports = async function(json, step) {
               fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${maxFanSpeed} `
               gpuTemperature[i] = maxFanSpeed + " Max"
             }
-
-            if (brand == "Amd") {
-              if (currentFanSpeed <= maxFanSpeed - 5) {
-                fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)}; `
-                gpuTemperature[i] = amdFanSpeedConvertFrom(currentFanSpeed + 5)
-              } else {
-                fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(maxFanSpeed)}; `
-                gpuTemperature[i] = maxFanSpeed + " Max"
-              }     
-            }
           }
+
+          if (brand == "Amd") {
+            if (currentFanSpeed <= maxFanSpeed - 5) {
+              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)}; `
+              gpuTemperature[i] = currentFanSpeed + 5
+            } else {
+              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(maxFanSpeed)}; `
+              gpuTemperature[i] = maxFanSpeed + " Max"
+            }     
+          }
+
         } else {
+          if (currentFanSpeed == maxFanSpeed) currentFanSpeed = currentFanSpeed + " Max"
           gpuTemperature[i] = currentFanSpeed
         }
         gpuDegree[i] = Number(infos[brand]["GPU"][i.toString()]["Temperature"])

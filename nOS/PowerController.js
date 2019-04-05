@@ -3,7 +3,7 @@ module.exports = async function(json, step, powerStatus = '') {
   const cp = require('child_process');
 
   // Setup
-  const ocHelper = require('./helpers/HiveOverclocksAPI.js');
+  const ocHelper = require('./helpers/HiveOS_API.js/index.js');
   const ocSettings = require('../Overclocks.json');
 
   if (powerStatus == '') {
@@ -101,18 +101,29 @@ module.exports = async function(json, step, powerStatus = '') {
     
     for (var i = 0; i < gpuNumber; i++) {
       let nextWatt
-      let currentFanSpeed = Number(json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, ''))
-      let currentTemp = json[brand]["GPU"][i]["Temperature"]
-      let minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].replace(/ W/, ''))
+      let currentFanSpeed
+      let minWatt
 
+      if (brand == 'Nvidia') {
+        currentFanSpeed = Number(json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, ''))
+        minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].replace(/ W/, ''))
+      }
+      if (brand == 'Amd') {
+        currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"]
+        minWatt = json[brand]["GPU"][i]["Min Watt"]
+      }
+      let currentTemp = json[brand]["GPU"][i]["Temperature"]
+      
       if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingMax) {
-        nextWatt = json[brand]["GPU"][i]["Watt"].split('.')[0] - 5
-        if (nextWatt >= minWatt) {
-          if (brand == "Nvidia") {
+        if (brand == "Nvidia") {
+          nextWatt = json[brand]["GPU"][i]["Watt"].split('.')[0] - 5
+          if (nextWatt >= minWatt) {
             wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
           }
-
-          if (brand == "Amd") {
+        }
+        if (brand == "Amd") {
+          nextWatt = Math.round(json[brand]["GPU"][i]["Watt"]) - 5
+          if (nextWatt >= minWatt) {
             wattCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setpoweroverdrive ${nextWatt} --autorespond yes; `
           }
         }

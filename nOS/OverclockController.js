@@ -4,7 +4,7 @@ module.exports = async function(json, step) {
   const fs = require('fs');
 
   // Setup
-  const ocHelper = require('./helpers/HiveOverclocksAPI.js');
+  const ocHelper = require('./helpers/HiveOS_API.js');
   const ocSettings = require('../Overclocks.json');
 
   let overclocksStatus = {
@@ -29,7 +29,7 @@ module.exports = async function(json, step) {
       if (step == "init") {
         for (let i = 0; i < json.Nvidia.GPU.length; i++) {
           if (ocSettings.Nvidia["Use Hive_OC"]) {
-            let hiveOC = await ocHelper(json.Nvidia.GPU[i].Name)
+            let hiveOC = await ocHelper(json.Nvidia.GPU[i].Name, 'OC')
 
             if (hiveOC && ocCommand == '') ocCommand += 'nvidia-settings '
             if (hiveOC.core_clock) {
