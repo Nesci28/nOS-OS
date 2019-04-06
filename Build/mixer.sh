@@ -83,8 +83,10 @@ oldUUID=$(lsblk -oNAME,UUID ${disk}3 | tail -1 | cut -d ' ' -f2)
 newUUID=$(lsblk -oNAME,UUID ${loopDevice}p4 | tail -1 | cut -d ' ' -f2)
 sed -i "s/${oldUUID}/${newUUID}/g" /etc/fstab
 sed -i "s/${oldUUID}/${newUUID}/g" /boot/grub/grub.cfg
-mkinitcpio -p linux
+grub-install --target=i386-pc ${disk}
+grub-install --target=x86_64-efi --efi-directory=/boot--bootloader-id=GRUB --removable
 grub-mkconfig -o /boot/grub/grub.cfg
+mkinitcpio -p linux
 EOT
 
 sudo cp /mnt/USB/home/nos/SystemConfig.json /mnt/destination/ntfs/SystemConfig.json
