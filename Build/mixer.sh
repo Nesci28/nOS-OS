@@ -19,12 +19,11 @@ sudo cp CoinsConfig.json /mnt/USB/home/nos/CoinsConfig.json
 sudo cp Overclocks.json /mnt/USB/home/nos/Overclocks.json
 cd /mnt/USB/home/nos
 
-size=$(sudo du -cs --block-size=512 /mnt/USB | tail -1)
-size=$(echo ${size} | cut -d ' ' -f1)
-size=$((size+2000000))
+size=$(sudo df -h /mnt/USB | tail -1 | sed 's/  */ /g' | cut -d ' ' -f3 | sed 's/G//g')
+size=$(echo "(${size} + 0.6) * 1000 * 1024 / 1" | scale=0 bc)
 
 cd ~/Build/Image
-sudo dd if=/dev/zero of=~/Build/Image/nOS.img bs=512 count=${size} status=progress
+dd if=/dev/zero of=nOS.img bs=1024 count=${size} status=progress
 sudo gdisk nOS.img <<EOF
 o
 Y
@@ -84,7 +83,7 @@ newUUID=$(lsblk -oNAME,UUID ${loopDevice}p4 | tail -1 | cut -d ' ' -f2)
 sed -i "s/${oldUUID}/${newUUID}/g" /etc/fstab
 sed -i "s/${oldUUID}/${newUUID}/g" /boot/grub/grub.cfg
 grub-install --target=i386-pc ${disk}
-grub-install --target=x86_64-efi --efi-directory=/boot--bootloader-id=GRUB --removable
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
 grub-mkconfig -o /boot/grub/grub.cfg
 mkinitcpio -p linux
 EOT
