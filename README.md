@@ -105,6 +105,11 @@ or
 stop (if using the full image)
 ```
 
+#### SSH
+```bash
+node SSH.js help
+```
+
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 

@@ -23,19 +23,19 @@ module.exports = async function(json, step) {
   let amdGpuNumber = json.Amd.GPU.length
 
   // Initializing on the first run
-  if (nvidiaGpuNumber > 0 && step == "init") initialize(nvidiaGpuNumber, 'Nvidia')
-  if (amdGpuNumber > 0 && step == "init") initialize(amdGpuNumber, 'Amd') 
+  if (nvidiaGpuNumber > 0 && step == "init") initialize(json, nvidiaGpuNumber, 'Nvidia')
+  if (amdGpuNumber > 0 && step == "init") initialize(json, amdGpuNumber, 'Amd') 
   
   // Stop the fans
-  if (nvidiaGpuNumber > 0 && step == "stop") stop(nvidiaGpuNumber, 'Nvidia')
-  if (amdGpuNumber > 0 && step == "stop") stop(amdGpuNumber, 'Amd') 
+  if (nvidiaGpuNumber > 0 && step == "stop") stop(json, nvidiaGpuNumber, 'Nvidia')
+  if (amdGpuNumber > 0 && step == "stop") stop(json, amdGpuNumber, 'Amd') 
 
   // Main Temperature Controller
   if (step !== "init" && step !== "stop") await main(json)
   return temperatureStatus
 
 
-  function initialize(gpuNumber, brand) {
+  function initialize(infos, gpuNumber, brand) {
     temperatureStatus["Temperature"][brand] = "Initializing" 
     let initCommand = ''
 
@@ -45,13 +45,14 @@ module.exports = async function(json, step) {
         initCommand += '-a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=80 '
       }
       if (brand == "Amd") {
-        initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(80)}; `
+        let amdGpuID = infos[brand]["GPU"][i]["ID"]
+        initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setfan ${amdFanSpeedConvertTo(80)}; `
       }
     }
     if (initCommand) cp.execSync(initCommand)
   }
 
-  function stop(gpuNumber, brand) {
+  function stop(infos, gpuNumber, brand) {
     temperatureStatus["Temperature"][brand] = "Stopping" 
     let stopCommand = ''
 
@@ -61,7 +62,8 @@ module.exports = async function(json, step) {
         stopCommand += '-a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=20 '
       }
       if (brand == "Amd") {
-        stopCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(20)}; ` 
+        let amdGpuID = infos[brand]["GPU"][i]["ID"]
+        stopCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setfan ${amdFanSpeedConvertTo(20)}; ` 
       }
     }
     if (stopCommand) cp.execSync(stopCommand)
@@ -88,7 +90,10 @@ module.exports = async function(json, step) {
 
       for (let i = 0; i < infos[brand]["GPU"].length; i++) {
         if (brand == "Nvidia") currentFanSpeed = Number(infos[brand]["GPU"][i]["Fan Speed"].split(' ')[0])
-        if (brand == "Amd") currentFanSpeed = infos[brand]["GPU"][i]["Fan Speed"]
+        if (brand == "Amd") {
+          currentFanSpeed = infos[brand]["GPU"][i]["Fan Speed"]
+          var amdGpuID = infos[brand]["GPU"][i]["ID"]
+        }
         
         if (infos[brand]["GPU"][i.toString()]["Temperature"] < minTemperature) {
           if (currentFanSpeed >= 21) { 
@@ -98,7 +103,7 @@ module.exports = async function(json, step) {
               gpuTemperature[i] = currentFanSpeed - 5
             }
             if (brand == "Amd") {
-              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed - 5)}; `
+              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setfan ${amdFanSpeedConvertTo(currentFanSpeed - 5)}; `
               gpuTemperature[i] = currentFanSpeed - 5
             }
           }
@@ -117,10 +122,10 @@ module.exports = async function(json, step) {
 
           if (brand == "Amd") {
             if (currentFanSpeed <= maxFanSpeed - 5) {
-              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)}; `
+              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setfan ${amdFanSpeedConvertTo(currentFanSpeed + 5)}; `
               gpuTemperature[i] = currentFanSpeed + 5
             } else {
-              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${i} --setfan ${amdFanSpeedConvertTo(maxFanSpeed)}; `
+              fanCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setfan ${amdFanSpeedConvertTo(maxFanSpeed)}; `
               gpuTemperature[i] = maxFanSpeed + " Max"
             }     
           }

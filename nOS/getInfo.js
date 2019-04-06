@@ -144,6 +144,7 @@ module.exports = function(step, json = '') {
 			let amdName = cp.execSync('sudo ./helpers/amdmeminfo -q -s | cut -d \':\' -f3 | sed \'s/Radeon //g\'').toString().trim().split("\n")
 			for (let i = 0; i < amdStats["gpus"].length; i++) {
 				let gpuObject = clearVars()
+				gpuObject["ID"] = amdStats["gpus"][i]["gpu"]
 				gpuObject["Utilization"] = amdStats["gpus"][i]["utilization"]
 				gpuObject["Core Clock"] = amdStats["gpus"][i]["sclock"]
 				gpuObject["Mem Clock"] = amdStats["gpus"][i]["mclock"]
@@ -189,6 +190,7 @@ module.exports = function(step, json = '') {
 
 	function clearVars() {
 			let gpuObject = {
+			"ID": null,
 			"Utilization": null,
 			"Core Clock": null,
 			"Max Core": null,

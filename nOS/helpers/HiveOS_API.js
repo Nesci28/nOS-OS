@@ -1,4 +1,4 @@
-module.exports = async function(gpuName, control) {
+module.exports = async function(gpuName, control, miner) {
   const axios = require('axios');
   
   if (control == 'OC') {
@@ -9,6 +9,13 @@ module.exports = async function(gpuName, control) {
 
   if (control == 'Miners') {
     let hiveMiners = await axios.get(`https://api2.hiveos.farm/api/v2/hive/miners`)
-    console.log(hiveMiners.data.data)
+    let hiveVersions = hiveMiners.data.data.find(obj => obj.id === `${miner}`);
+    let hiveVersionNumber = hiveVersions.versions[hiveVersions.versions.length-1]
+    if (RegExp('-').test(hiveVersionNumber)) {
+      hiveVersionNumber = hiveVersionNumber.split('-')[0]
+    }
+  
+    let localVersion = fs.readFileSync(`../Miners/T-Rex/version`).toString().trim()
+    if (hiveVersionNumber !== localVersion) return { "Miner": "New miner version detected" }
   }
 }
