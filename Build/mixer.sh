@@ -24,6 +24,7 @@ size=$(echo "(${size} + 0.6) * 1000 * 1024 / 1" | scale=0 bc)
 
 cd ~/Build/Image
 dd if=/dev/zero of=nOS.img bs=1024 count=${size} status=progress
+sleep 5
 sudo gdisk nOS.img <<EOF
 o
 Y
