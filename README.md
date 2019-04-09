@@ -6,27 +6,30 @@ md5: f975e3dd905b08b7b11beed49c695dfd
 
 
 # Installation
-
 ```bash 
 git clone https://github.com/Nesci28/nOS.git
+
+W.I.P
 (optional: nOS rice, needs i3-gaps)
-git clone https://github.com/Nesci28/rice.git
+git clone https://github.com/Nesci28/nOS-rice.git
 ```
 
 ## Linux
+
+### Don't forget to change the default root and user password if shellinabox is activated !!!
+```bash
+passwd
+sudo passwd
+```
+
 #### Dependancies
 | nvidia        	    | opencl-amd  	    | openssh 	          |
 |:---------------	    |:-------------	    |:---------	          |
 | __screen__        	| __shellinabox__ 	| __nvidia-settings__	|
 | __nodejs__        	| __npm__         	| __gnu-netcat__      |
-| __libmicrohttpd__ 	| __curl__        	| __pm2 (npm)__       |
-| __tmux__          	| __rxvt-unicode__  | __jq__              |
+| __libmicrohttpd__ 	| __curl__        	| __jq__              |
+| __tmux__          	| __rxvt-unicode__  | __pm2 (npm)__       |
 
-__Don't forget to change the default root and user password if shellinabox is activated !!!__
-```bash
-passwd
-sudo passwd
-```
 Shellinabox must be running on port: 4200
 
 ### Arch
@@ -56,7 +59,7 @@ sudo pacman -U opencl*.tar.xz
 ```
 
 ## Windows
-WIP
+W.I.P
 
 # Configuration
 ## SystemConfig.json
@@ -94,7 +97,7 @@ Math.round(Number(90) + (217 - 90) / 50 * (70 - 50)) == 141 W
 ```bash
 ./start.sh
 or
-pm2 start LaunchPad.js -- init 2>&1 >/dev/null; pm2 logs 0 --raw &
+pm2 start --name LaunchPad LaunchPad.js -- init 2>&1 >/dev/null; pm2 logs LaunchPad --raw &
 or 
 start (if using the full image)
 ```
