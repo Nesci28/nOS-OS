@@ -48,8 +48,6 @@ module.exports = async function(json) {
 		}
 	}
 
-
-
 	try {		
 		let minerError;
 		for (let i = 0; i < coinsArr.length; i++) {
@@ -60,7 +58,7 @@ module.exports = async function(json) {
 				// Closing the already running miner
 				let screenName = await ifexist(gpuType, "start")
 				if (screenName) {
-					cp.execSync(`kill ${screenName}`)
+					cp.execSync(`pm2 stop ${screenName}`)
 				}
 				
 				// Get the miner informations
@@ -112,49 +110,35 @@ module.exports = async function(json) {
 
 	// Run the command line
 	function run(json, gpuType) {
-		let screenRcm = ''
-
 		if (gpuType == "Nvidia"){
 			processName = "minerNvidia"
-			// screenRcm = "../Logs/minerNvidia.txt"
-			// screenRcmBck = "../Logs/backups/minerNvidia.txt"
 		} else if (gpuType == "Amd") {
 			processName = "minerAmd"
-			// screenRcm = "../Logs/minerAmd.txt"
-			// screenRcmBck = "../Logs/backups/minerAmd.txt"
 		} else {
 			processName = "minerCpu"
-			// screenRcm = "../Logs/minerCpu.txt"
-			// screenRcmBck = "../Logs/backups/minerCpu.txt"
 		}
 
-		// if (fs.existsSync(screenRcm)) {
-		// 	fs.rename(screenRcm, screenRcmBck, function (err) {
-		// 		if (err) throw err;
-		// 	});
-		// }
-
-		return `screen -dmS ${processName} ${json[gpuType]["Coin Info"]["command"]}`
+		return `pm2 start --name ${processName} ${json[gpuType]["Coin Info"]["command"]}`
 	}
 
 	// Check if the screen as been created
 	function ifexist(gpuType, section) {
-		screenName = gpuType == "Nvidia" ? 'minerNvidia' : gpuType == "Amd" ? 'minerAmd' : gpuType == "ethpill" ? 'ethpill' : 'minerCpu'
-		let screenOutput
-		try {
-			screenOutput = cp.execSync(`screen -ls ${screenName}`).toString().trim().split("\n")[1].trim().split('.')[0]
-		} catch (ex) {
-			if (section !== "start") console.log(chalk.redBright("Error, trying to fix the issue automatically"))
-			return
+		screenName = gpuType == "Nvidia" ? 'minerNvidia' : gpuType == "Amd" ? 'minerAmd' : gpuType == "ethpill" ? 'ethpill' : 'minerCpu'		
+		let jlist = cp.execSync('pm2 jlist')
+		if (jlist.length > 0) {
+			for (let i = 0; i < jlist.length; i++) {
+				if (jlist[i].name == screenName) return screenName
+			}
 		}
-		return screenOutput
+
+		return
 	}
 
 	// Serving the Pill
 	function servingPill(pillGpu) {
 		if (pillGpu) {
-			console.log(chalk.whiteBright("Serving the pill..."))
-			return "screen -dmS ethpill sudo /opt/EthPill/OhGodAnETHlargementPill-r2"
+			console.log("Serving the pill...")
+			return "pm2 start --name ethpill -- sudo /opt/EthPill/OhGodAnETHlargementPill-r2"
 		}
 	}
 }

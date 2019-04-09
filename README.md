@@ -20,7 +20,7 @@ git clone https://github.com/Nesci28/rice.git
 | __screen__        	| __shellinabox__ 	| __nvidia-settings__	|
 | __nodejs__        	| __npm__         	| __gnu-netcat__      |
 | __libmicrohttpd__ 	| __curl__        	| __pm2 (npm)__       |
-| __tmux__          	| __rxvt-unicode__  |                     |
+| __tmux__          	| __rxvt-unicode__  | __jq__              |
 
 __Don't forget to change the default root and user password if shellinabox is activated !!!__
 ```bash
@@ -32,7 +32,7 @@ Shellinabox must be running on port: 4200
 ### Arch
 #### official repo
 ```bash
-sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh nvidia-settings gnu-netcat rxvt-unicode
+sudo pacman -S nvidia screen nodejs npm libmicrohttpd curl openssh nvidia-settings gnu-netcat rxvt-unicode jq
 ln -s llibmicrohttpd.so.12 libmicrohttpd.so.10
 sudo npm install -g pm2
 ```

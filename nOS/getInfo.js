@@ -1,7 +1,8 @@
-module.exports = function(step, json = '') {
+module.exports = function(step, json = '', counter) {
 	// Dependancies
 	const cp = require('child_process');
 	const ip = require('ip');
+	const simpleGit = require('simple-git/promise')();
 
 	const nvidiaGPU = require('./helpers/gpu.js');
 	const amdGPU = require('./helpers/amd_rocm_parser.js');
@@ -65,7 +66,7 @@ module.exports = function(step, json = '') {
 		}
 	}
 
-	return main(step, json)
+	return main(step, json, counter)
 
 	// main
 	async function main(step, json, counter) {
@@ -73,10 +74,21 @@ module.exports = function(step, json = '') {
 		json["New Time"] = new Date().getTime()
 		json["Runtime"] = json["New Time"] - json["Runtime Start"]
 		if (counter == 0 || counter == 480) {
-			json["Local GitHash"] = cp.execSync('git rev-parse HEAD')
-			json["Remote GitHash"] = cp.execSync('git ls-remote https://github.com/Nesci28/nOS.git | head -1 | cut -f1 -d$\'\t\'')
+			
+			let localHash = async () => {
+				let res = await simpleGit.revparse(['HEAD'])
+				return res.trim()
+			}
+			json["Local GitHash"] = await localHash()
+
+			let remoteHash = async () => {
+				let res = await simpleGit.listRemote(['--heads'])
+				return res.split('\t')[0]
+			}
+			json["Remote GitHash"] = await remoteHash()
+
 			if (json["Local GitHash"] !== json["Remote GitHash"]) {
-				cp.execSync('nosFolder=$(find /home -type d -name nOS 2>/dev/null; cd ${nosFolder}; git stash && git pull origin master && git stash pop')
+				await simpleGit.pull('origin', 'master')
 				console.log('Updated nOS to the latest Version.')
 			} else {
 				console.log('This version of nOS is currently the latest.')

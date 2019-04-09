@@ -30,64 +30,66 @@ if (process.argv[process.argv.length - 1] == 'stop') {
 
 if (process.argv[process.argv.length - 1] == 'init') {
   (async() => {
+    await checkXorg()
+    await moveConfig()
     if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
       network = await connection(systemConfig["Wifi Name"], systemConfig["Wifi Password"])
     }
-    await checkXorg()
-    await moveConfig()
     let counter = 0
     await launchPad('init', counter)
   })()
 }
 
 async function launchPad(step, counter, coin, power, overclocks, database = '', json = '', shell = '') {
-  if (step !== "shellinabox") {
-    process.stdout.write('\033c');
-    json = await info(step, json, counter)
-  }
-
-  if (step == "init") {
-    shell = await shellinabox(step)
-    json.Shellinabox = shell.Shellinabox.URL
-    power = await powerControl(json, step)
-    overclocks = await ocControl(json, step)
-    coin = await coins(json)
-    cp.execSync('urxvt -e ./tmux.sh && exit &')
-    database = await DB(json, '')
-  }
-
-  
-  if (step == "init" || step == "running") {
-    var temperature = await tempControl(json, step)
-    var watch = await watchdog(json, step)
-  }
-  
-  if (step == "running") {
-    if (counter % 2 == 0) {
-      power = await powerControl(json, step, power)
+  try {
+    if (step !== "shellinabox") {
+      process.stdout.write('\033c');
+      json = await info(step, json, counter)
     }
-    var existingDB = database.DB.Entry
-    database = await DB(json, existingDB)
-  }
 
-  if (counter == 480) {
-    counter = 0
-    shell = await shellinabox('shellinabox')
-    json.Shellinabox = shell.Shellinabox.URL
-  }
-  
-  // let ui = await showUI(json)
-  
-  // console.log(ui)
-  console.log(util.inspect(coin, false, null, true))
-  console.log(util.inspect(power, false, null, true))
-  if (overclocks !== undefined) {
-    console.log(util.inspect(overclocks, false, null, true))
-  }
-  console.log(util.inspect(temperature, false, null, true))
-  console.log(util.inspect(watch, false, null, true))
-  console.log(database)
-  console.log(shell, counter)
+    if (step == "init") {
+      shell = await shellinabox(step)
+      json.Shellinabox = shell.Shellinabox.URL
+      power = await powerControl(json, step)
+      overclocks = await ocControl(json, step)
+      coin = await coins(json)
+      cp.execSync('urxvt -e ./tmux.sh && exit &')
+      database = await DB(json, '')
+    }
+
+    
+    if (step == "init" || step == "running") {
+      var temperature = await tempControl(json, step)
+      var watch = await watchdog(json, step)
+    }
+    
+    if (step == "running") {
+      if (counter % 2 == 0) {
+        power = await powerControl(json, step, power)
+      }
+      var existingDB = database.DB.Entry
+      database = await DB(json, existingDB)
+    }
+
+    if (counter == 480) {
+      counter = 0
+      shell = await shellinabox('shellinabox')
+      json.Shellinabox = shell.Shellinabox.URL
+    }
+    
+    // let ui = await showUI(json)
+    
+    // console.log(ui)
+    console.log(util.inspect(coin, false, null, true))
+    console.log(util.inspect(power, false, null, true))
+    if (overclocks !== undefined) {
+      console.log(util.inspect(overclocks, false, null, true))
+    }
+    console.log(util.inspect(temperature, false, null, true))
+    console.log(util.inspect(watch, false, null, true))
+    console.log(database)
+    console.log(shell, counter)
+  } catch {}
 
   setTimeout(async () => {
     counter++
@@ -122,23 +124,20 @@ async function stop() {
   cp.execSync('rm -rf ~/.pm2/logs/*')
   cp.execSync('pm2 flush')
 
-  let pm2List = cp.execSync('ps aux | grep "pm2 logs 0" | grep "node" | sed \'s/  */ /g\' | cut -d \' \' -f2')
-  pm2List = pm2List.toString().trim().split('\n')
-  for (let ID of pm2List) {
-    try {
-      cp.execSync(`kill ${ID}`)
+  const pm2Processes = ["Launchpad", "minerNvidia", "minerAmd", "minerCpu", "ethpill"]
+  for (let PIDS of pm2Processes) {
+    let pm2List = cp.execSync(`ps aux | grep pm2 | grep ${PIDS} | grep "node" | sed 's/  */ /g' | cut -d ' ' -f2`)
+    pm2List = pm2List.toString().trim().split('\n')
+    for (let ID of pm2List) {
+      try {
+        cp.execSync(`kill ${ID}`)
+      }
+      catch {}
     }
-    catch {}
   }
 
-  for (let name of minerName) {
-    try {
-      let PID = cp.execSync(`screen -ls ${name}`).toString().trim().split("\n")[1].trim().split('.')[0]
-      if (PID) {
-        console.log(`Closing ${name}...`)
-        cp.execSync(`kill ${PID}`)
-      }
-    } catch {} 
+  if (cp.execSync('tmux list-sessions | grep miner').toString().trim()) {
+    cp.execSync('tmux kill-session -t miner')
   }
 }
 
@@ -153,7 +152,7 @@ async function connection(ssid, password) {
         if (err) {
           console.log(err);
         }
-        return "connected"
+        return "Connected"
       });
     } else {
       return "Connected"

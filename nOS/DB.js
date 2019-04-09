@@ -9,7 +9,9 @@ const cryptr = new Cryptr('012idontreallygiveashit012');
 let dotenv = fs.readFileSync('./helpers/.dotenv').toString()
 dotenv = JSON.parse(cryptr.decrypt(dotenv));
 
-const db = monk(`${dotenv.User}:${dotenv.Pass}@${dotenv.Host}`)
+const db = monk(`${dotenv.User}:${dotenv.Pass}@${dotenv.Host}`, {
+  autoReconnect: true
+})
 const webserver = db.get('rigsInfo')
 
 module.exports = async function(json, existingDB = '') {
@@ -25,6 +27,7 @@ module.exports = async function(json, existingDB = '') {
 	if (existingDB == '') {
 		existingDB = await webserver.find({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]})
 	}
+	
 	await checkForNewConfigs(existingDB)
 	sendToDBStatus["DB"]["Entry"] = existingDB
 	sendToDBStatus["DB"]["Status"] = await setID(existingDB, json).status

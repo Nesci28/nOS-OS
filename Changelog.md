@@ -14,3 +14,13 @@ No version number yet, still WIP
 - Fixed tmux.sh on mixed Rigs
 - HiveOS_API now as a function to check the latest version of a miner and compares it to the local version (didn't implement a auto-updater yet..)
 
+[08-05-2019]
+- __switched the use of Screen to pm2 to run the different processes__
+- Set autoReconnect to true on the DB
+- Changed the order in which the functions are getting called in launchPad
+- Fixed tmux.sh when there is multiple active PM2s
+- Switched the use of child_process to Simple-Git when running GIT commands
+- getInfo now checks the local and the remote last git commit hash on start and every 2 hours to check for a new update
+- Put the entire LaunchPad.js into a try / catch block so that the system doesnt hang when a problem occurs
+
+
