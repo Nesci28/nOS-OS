@@ -136,9 +136,11 @@ async function stop() {
     }
   }
 
-  if (cp.execSync('tmux list-sessions | grep miner').toString().trim()) {
-    cp.execSync('tmux kill-session -t miner')
-  }
+  try {
+    if (cp.execSync('tmux list-sessions | grep miner').toString().trim()) {
+      cp.execSync('tmux kill-session -t miner')
+    }
+  } catch {}
 }
 
 async function connection(ssid, password) {
