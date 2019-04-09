@@ -7,6 +7,22 @@ cat="sd${disk1}"
 
 sudo mount ${disk}3 /mnt/USB
 
+cd /mnt/USB
+sudo mount -t proc /proc proc/; sudo mount --rbind /sys sys/; sudo mount --rbind /dev dev/; sudo mount --rbind /run run/
+resolv="
+domain cgocable.ca
+nameserver 205.151.67.2
+nameserver 205.151.67.6
+nameserver 205.151.67.34"
+resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
+mount -a
+echo "${resolv}" >> /etc/resolv.conf
+pacman -Syy
+pacman -Syu --noconfirm
+pacman -Scc --noconfirm
+echo "" > /etc/resolv.conf
+EOT
+
 cd /mnt/USB/home/nos
 git pull origin master
 sudo rm -r .cache

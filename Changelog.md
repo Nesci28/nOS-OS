@@ -24,3 +24,9 @@ No version number yet, still WIP
 - Put the entire LaunchPad.js into a try / catch block so that the system doesnt hang when a problem occurs
 
 
+Beta Version 1.0.0
+
+[09-05-2019]
+- __Release of the first Beta version__
+- mixer.sh now makes sure to fully update the system of the master image before cloning it
+
