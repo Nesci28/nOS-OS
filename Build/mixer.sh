@@ -16,7 +16,7 @@ packages="${packages}" resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"E
 mount -a
 echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
-pacman -S "${packages}"
+pacman -S "${packages}" --noconfirm
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
 echo "" > /etc/resolv.conf
@@ -39,6 +39,7 @@ nameserver 205.151.67.6
 nameserver 205.151.67.34"
 packages=$(cat ~/Build/packages.txt)
 packages=(${packages})
+echo "" > ~/Build/packages.txt
 
 if [[ -z ${packages} ]]; then
   updateWithoutPackages
@@ -56,10 +57,10 @@ sudo rm -r .cache
 
 cd ~
 sudo cp .conkyrc /mnt/USB/home/nos/.conkyrc
-line=$(grep -n "bat:" .conkyrcbck | cut -d ':' -f1)
+line=$(grep -n "bat:" /mnt/USB/home/nos/.conkyrc | cut -d ':' -f1)
 line2=$((line+1))
-text=$(sed "${line},${line2}d" .conkyrcbck)
-echo "${text}" > .conkyrcbck
+text=$(sed "${line},${line2}d" /mnt/USB/home/nos/.conkyrc)
+sudo echo "${text}" > sudo tee /mnt/USB/home/nos/.conkyrc > /dev/null
 sudo cp .config/i3/config /mnt/USB/home/nos/.config/i3/config
 sudo cp .config/i3/conky-i3bar.sh /mnt/USB/home/nos/.config/i3/conky-i3bar.sh
 sudo cp /etc/i3status.conf /mnt/USB/etc/i3status.conf
