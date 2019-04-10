@@ -1,5 +1,28 @@
 # Dependancies: du, losetup, rsync, gdrive, p7zip
 
+updateWithoutPackages() {
+resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
+mount -a
+echo "${resolv}" >> /etc/resolv.conf
+pacman -Syy
+pacman -Syu --noconfirm
+pacman -Scc --noconfirm
+echo "" > /etc/resolv.conf
+EOT
+}
+
+updateWithPackages() {
+packages="${packages}" resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
+mount -a
+echo "${resolv}" >> /etc/resolv.conf
+pacman -Syy
+pacman -S "${packages}"
+pacman -Syu --noconfirm
+pacman -Scc --noconfirm
+echo "" > /etc/resolv.conf
+EOT
+}
+
 lsblk
 read -p 'Select the disk letter /dev/sdX : ' disk1
 disk="/dev/sd${disk1}"
@@ -14,14 +37,14 @@ domain cgocable.ca
 nameserver 205.151.67.2
 nameserver 205.151.67.6
 nameserver 205.151.67.34"
-resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
-mount -a
-echo "${resolv}" >> /etc/resolv.conf
-pacman -Syy
-pacman -Syu --noconfirm
-pacman -Scc --noconfirm
-echo "" > /etc/resolv.conf
-EOT
+packages=$(cat ~/Build/packages.txt)
+packages=(${packages})
+
+if [[ -z ${packages} ]]; then
+  updateWithoutPackages
+else
+  updateWithPackages
+fi
 
 cd ~
 sudo umount -lf /mnt/USB
@@ -32,6 +55,14 @@ git pull origin master
 sudo rm -r .cache
 
 cd ~
+sudo cp .conkyrc /mnt/USB/home/nos/.conkyrc
+line=$(grep -n "bat:" .conkyrcbck | cut -d ':' -f1)
+line2=$((line+1))
+text=$(sed "${line},${line2}d" .conkyrcbck)
+echo "${text}" > .conkyrcbck
+sudo cp .config/i3/config /mnt/USB/home/nos/.config/i3/config
+sudo cp .config/i3/conky-i3bar.sh /mnt/USB/home/nos/.config/i3/conky-i3bar.sh
+sudo cp /etc/i3status.conf /mnt/USB/etc/i3status.conf
 sudo cp .xinitrc /mnt/USB/home/nos/.xinitrc
 sudo cp .bashrc /mnt/USB/home/nos/.bashrc
 sudo cp SystemConfig.json /mnt/USB/home/nos/SystemConfig.json

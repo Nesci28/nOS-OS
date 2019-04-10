@@ -1,9 +1,9 @@
 # nOS
 
+[Changelog](https://github.com/Nesci28/nOS/blob/master/Changelog.md)
 
 Download: [https://drive.google.com/open?id=1z_70fVYgQ7xHaSLVYZA241FcgT7jUbVj](https://drive.google.com/open?id=1z_70fVYgQ7xHaSLVYZA241FcgT7jUbVj)  
 md5: 0438b66cbc3fc01ceb708dc06cef0402
-
 
 # Installation
 ```bash 
