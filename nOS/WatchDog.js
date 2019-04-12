@@ -176,13 +176,13 @@ module.exports = async function(json, step) {
 
   async function restart(reason, gpuPosition) {
     if (reason == "utils") {
-      fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Utilization is too low")
+      fs.writeFileSync("../Logs/WatchDog.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Utilization is too low")
     } else if (reason == "coreClock") {
-      fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Core Clock is too low")
+      fs.writeFileSync("../Logs/WatchDog.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Core Clock is too low")
     } else if (reason == "memClock") {
-      fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Mem Clock is too low")
+      fs.writeFileSync("../Logs/WatchDog.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Mem Clock is too low")
     } else if (reason == "maxTemp") {
-      fs.writeFileSync("../Logs/WatchDogErrors.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Temperature is too high")
+      fs.writeFileSync("../Logs/WatchDog.txt", new Date().getTime() + " - GPU : " + gpuPosition + " - Temperature is too high")
     }
     // await cp.execSync('sudo shutdown -r now')
   } 

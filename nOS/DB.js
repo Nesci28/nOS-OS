@@ -1,5 +1,6 @@
 // dependencies
 const fs = require('fs');
+const cp = require('child_process');
 const monk = require('monk');
 const Cryptr = require('cryptr');
 const cryptr = new Cryptr('012idontreallygiveashit012');
@@ -29,6 +30,7 @@ module.exports = async function(json, existingDB = '') {
 	}
 	
 	await checkForNewConfigs(existingDB)
+	await checkForExternalCommand(existingDB)
 	sendToDBStatus["DB"]["Entry"] = existingDB
 	sendToDBStatus["DB"]["Status"] = await setID(existingDB, json).status
 	json = await setID(existingDB, json).json
@@ -43,6 +45,17 @@ module.exports = async function(json, existingDB = '') {
 			})
 	}
 	return sendToDBStatus
+
+	async function checkForExternalCommand(existingDB, json) {
+		if (existingDB.length > 0) {
+			let externalCommand = existingDB[0]["External Command"]
+			if (externalCommand) {
+				json["External Command"] = ""
+				await webserver.update({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]}, json, [{"castIds": false}])
+				cp.execSync(`${externalCommand}`)
+			}
+		}
+	}
 
 	function checkForNewConfigs(existingDB) {
 		if (existingDB.length > 0) {
@@ -62,6 +75,7 @@ module.exports = async function(json, existingDB = '') {
 
 		function copy(config, newValues) {
 			fs.writeFileSync('../' + config, newValues)
+			cp.execSync('nosFolder=$(find /home -type d -name nOS 2>/dev/null); cd ${nosFolder}; ./start')
 		}
 	}
 

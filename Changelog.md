@@ -1,5 +1,17 @@
+[12-05-2019] __Beta version 1.0.1__
+- Start.sh now properly restart nOS if it is already running
+- nOS restarts when there is new configurations coming from the Webapp
+- nOS restarts when it detects a new update
+- Fixed a bug where the hashrate was returning null since the switch from Screen to PM2
+- Fixed a bug where the miners log were returning null since the switch from Screen to PM2
+- Added Total Wattage to getInfo.js
+
+[11-05-2019]
+- Added the capacity to the Webapp to send external commands
+
 [10-05-2019]
 - New i3status bar design
+- Changed dmenu to rofi
 
 [09-05-2019]
 - __Release of the first Beta version__

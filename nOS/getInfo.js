@@ -3,6 +3,7 @@ module.exports = function(step, json = '', counter) {
 	const cp = require('child_process');
 	const ip = require('ip');
 	const simpleGit = require('simple-git/promise')();
+	const readLastLines = require('read-last-lines');
 
 	const nvidiaGPU = require('./helpers/gpu.js');
 	const amdGPU = require('./helpers/amd_rocm_parser.js');
@@ -34,10 +35,12 @@ module.exports = function(step, json = '', counter) {
 			"Shellinabox": null,
 			"Local GitHash": null,
 			"Remote GitHash": null,
+			"External Command": null,
 			"Nvidia": {
 				"Coin": null,
 				"Algo": null,
 				"Total Hashrate": null,
+				"Total Watt": null,
 				"Avg Temperature": null,
 				"Coin Info": {},
 				"GPU": {},
@@ -47,6 +50,7 @@ module.exports = function(step, json = '', counter) {
 				"Coin": null,
 				"Algo": null,
 				"Total Hashrate": null,
+				"Total Watt": null,
 				"Avg Temperature": null,
 				"Coin Info": {},
 				"GPU": {},
@@ -89,9 +93,11 @@ module.exports = function(step, json = '', counter) {
 
 			if (json["Local GitHash"] !== json["Remote GitHash"]) {
 				await simpleGit.pull('origin', 'master')
+				fs.writeFileSync("../Logs/History.txt", new Date().getTime() + " Updated nOS to the latest Version. " + json["Remote GitHash"])
 				console.log('Updated nOS to the latest Version.')
+				cp.execSync('./start.sh')
 			} else {
-				console.log('This version of nOS is currently the latest.')
+				console.log('You are currently on the latest version of nOS.')
 			}
 		}
 
@@ -177,12 +183,18 @@ module.exports = function(step, json = '', counter) {
 			}
 		}
 		json[brand]["Avg Temperature"] = (avgTemperature / json[brand]["GPU"].length).toFixed(2) + " °C"
+
+		let totalWatt = 0
+		for (let i = 0; i < json[brand]["GPU"].length; i++) {
+			totalWatt += parseFloat(json[brand]["GPU"][i].Watt)
+		}
+		json[brand]["Total Watt"] = totalWatt.toFixed(2) + " W"
 	}
 
 	async function getHashrate(brand, miner) {
 		let minerRunning = undefined
 		try {
-			minerRunning = cp.execSync('screen -ls | grep miner' + brand)
+			minerRunning = await checkRunningMiner(brand)
 		} catch {}
 		// run the getHashrate for that miner
 		if (minerRunning) {
@@ -192,6 +204,15 @@ module.exports = function(step, json = '', counter) {
 			
 			for (let i = 0; i < hashrate["Hashrate"].length; i++) {
 				json[brand]["GPU"][i.toString()]["Hashrate"] = hashrate["Hashrate"][i]
+			}
+		}
+
+		function checkRunningMiner(brand) {
+		let jList = JSON.parse(cp.execSync('pm2 jlist').toString())
+			for (let i = 0; i < jList.length; i++) {
+				if (jList[i].name == 'miner' + brand) {
+					return true
+				}
 			}
 		}
 	}
@@ -245,10 +266,13 @@ module.exports = function(step, json = '', counter) {
 		json[gpuType]["Coin Info"]["password2"] = coinsConfig[gpuType][coin]["Alternative Password"]
 	}
 
-	async function getMinerLog() {
-		try {
-			let tmux = await cp.execSync('tmux has-sessions -t miners 2>/dev/null; echo $?').toString().trim()
-			if (tmux == 0) return cp.execSync('tmux capture-pane -pS 40').toString()
-		} catch {}
+	async function getMinerLog(brand) {
+		let jlist = JSON.parse(cp.execSync('pm2 jlist').toString())
+		for (let i = 0; i < jlist.length; i++) {
+			if (jlist[i].name == `miner${brand}`) {
+				let minerLog = await readLastLines.read(`/home/nos/.pm2/logs/miner${brand}-out.log`, 15)
+				return minerLog
+			}
+		}
 	}
 }

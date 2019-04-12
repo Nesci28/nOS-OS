@@ -60,12 +60,16 @@ sudo cp .conkyrc /mnt/USB/home/nos/.conkyrc
 line=$(grep -n "bat:" /mnt/USB/home/nos/.conkyrc | cut -d ':' -f1)
 line2=$((line+1))
 text=$(sed "${line},${line2}d" /mnt/USB/home/nos/.conkyrc)
-sudo echo "${text}" > sudo tee /mnt/USB/home/nos/.conkyrc > /dev/null
+echo "${text}" > sudo tee /mnt/USB/home/nos/.conkyrc > /dev/null
 sudo cp .config/i3/config /mnt/USB/home/nos/.config/i3/config
 sudo cp .config/i3/conky-i3bar.sh /mnt/USB/home/nos/.config/i3/conky-i3bar.sh
 sudo cp /etc/i3status.conf /mnt/USB/etc/i3status.conf
 sudo cp .xinitrc /mnt/USB/home/nos/.xinitrc
 sudo cp .bashrc /mnt/USB/home/nos/.bashrc
+line=$(wc -l .bashrc | cut -d ' ' -f1)
+line2=$((line-1))
+text=$(sed "${line},${line2}d" /mnt/USB/home/nos/.bashrc)
+echo "${text}" > sudo tee /mnt/USB/home/nos/.bashrc > /dev/null
 sudo cp SystemConfig.json /mnt/USB/home/nos/SystemConfig.json
 sudo cp CoinsConfig.json /mnt/USB/home/nos/CoinsConfig.json
 sudo cp Overclocks.json /mnt/USB/home/nos/Overclocks.json
