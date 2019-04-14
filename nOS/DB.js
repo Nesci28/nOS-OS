@@ -17,7 +17,7 @@ module.exports = async function(json, existingDB = '') {
 	const urlPost = "https://nos-server.now.sh/add" 
 
 	if (existingDB == '') {
-		existingDB = await axios.post(this.urlGet, {
+		existingDB = await axios.post(urlGet, {
 			username: json.Username,
 			password: json.Password,
 			hostname: json.Hostname
@@ -30,9 +30,7 @@ module.exports = async function(json, existingDB = '') {
 	sendToDBStatus["DB"]["Status"] = await setID(existingDB, json).status
 	json = await setID(existingDB, json).json
 	
-	if (existingDB.length > 0) {
-		await axios.post(urlPost, json)
-	}
+	await axios.post(urlPost, json)
 	return sendToDBStatus
 
 	async function checkForExternalCommand(existingDB, json) {
