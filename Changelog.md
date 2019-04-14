@@ -1,3 +1,7 @@
+[13-05-2019]
+- The rigs doesnt contact the DB directly anymore, goes through the server
+- Fixed a bug in mixer.sh that was creating a "sudo" file in the home directory
+
 [12-05-2019] __Beta version 1.0.1__
 - Start.sh now properly restart nOS if it is already running
 - nOS restarts when there is new configurations coming from the Webapp

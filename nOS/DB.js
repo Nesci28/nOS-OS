@@ -1,19 +1,7 @@
 // dependencies
 const fs = require('fs');
 const cp = require('child_process');
-const monk = require('monk');
-const Cryptr = require('cryptr');
-const cryptr = new Cryptr('012idontreallygiveashit012');
-
-
-// DB setup
-let dotenv = fs.readFileSync('./helpers/.dotenv').toString()
-dotenv = JSON.parse(cryptr.decrypt(dotenv));
-
-const db = monk(`${dotenv.User}:${dotenv.Pass}@${dotenv.Host}`, {
-  autoReconnect: true
-})
-const webserver = db.get('rigsInfo')
+const axios = require('axios');
 
 module.exports = async function(json, existingDB = '') {
 	// Exporting DB information
@@ -23,12 +11,19 @@ module.exports = async function(json, existingDB = '') {
 			"Entry": null
 		}
 	};
-
+	// let urlGet = "http://localhost:5000/db"
+	// let urlPost = "http://localhost:5000/add"
+	const urlGet = "https://nos-server.now.sh/db"
+	const urlPost = "https://nos-server.now.sh/add" 
 
 	if (existingDB == '') {
-		existingDB = await webserver.find({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]})
+		existingDB = await axios.post(this.urlGet, {
+			username: json.Username,
+			password: json.Password,
+			hostname: json.Hostname
+		})
+		existingDB = existingDB.data
 	}
-	
 	await checkForNewConfigs(existingDB)
 	await checkForExternalCommand(existingDB)
 	sendToDBStatus["DB"]["Entry"] = existingDB
@@ -36,13 +31,7 @@ module.exports = async function(json, existingDB = '') {
 	json = await setID(existingDB, json).json
 	
 	if (existingDB.length > 0) {
-		await webserver.update({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]}, json, [{"castIds": false}])
-	} else {
-		await webserver.insert(json, [{"castIds": false}])
-			.then((docs) => {
-			}).catch((err) => {
-				console.log(err);
-			})
+		await axios.post(urlPost, json)
 	}
 	return sendToDBStatus
 
@@ -51,7 +40,7 @@ module.exports = async function(json, existingDB = '') {
 			let externalCommand = existingDB[0]["External Command"]
 			if (externalCommand) {
 				json["External Command"] = ""
-				await webserver.update({"Username": json["Username"], "Password": json["Password"], "Hostname": json["Hostname"]}, json, [{"castIds": false}])
+				await axios.post(urlPost, json)
 				cp.execSync(`${externalCommand}`)
 			}
 		}
