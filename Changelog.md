@@ -1,3 +1,14 @@
+[19-04-2018]  
+- Changed DB.js to work with the Authentication system
+
+
+[18-04-2019]
+- Fixed a display bug in PowerController
+- Changed DB.js to work with the new Back-End refactorization
+
+[16-04-2019]  
+- My 3rd child was born
+
 [13-05-2019]
 - The rigs doesnt contact the DB directly anymore, goes through the server
 - Fixed a bug in mixer.sh that was creating a "sudo" file in the home directory

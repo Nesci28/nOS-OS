@@ -2,6 +2,7 @@
 const fs = require('fs');
 const cp = require('child_process');
 const axios = require('axios');
+const monk = require('monk');
 
 module.exports = async function(json, existingDB = '') {
 	// Exporting DB information
@@ -12,9 +13,9 @@ module.exports = async function(json, existingDB = '') {
 		}
 	};
 	// let urlGet = "http://localhost:5000/db"
-	// let urlPost = "http://localhost:5000/add"
+	// let urlPost = "http://localhost:5000/rig/add"
 	const urlGet = "https://nos-server.now.sh/db"
-	const urlPost = "https://nos-server.now.sh/add" 
+	const urlPost = "https://nos-server.now.sh/rig/add" 
 
 	if (existingDB == '') {
 		existingDB = await axios.post(urlGet, {
@@ -27,9 +28,9 @@ module.exports = async function(json, existingDB = '') {
 	await checkForNewConfigs(existingDB)
 	await checkForExternalCommand(existingDB)
 	sendToDBStatus["DB"]["Entry"] = existingDB
-	sendToDBStatus["DB"]["Status"] = await setID(existingDB, json).status
-	json = await setID(existingDB, json).json
-	
+	let setStatus = await setID(existingDB, json)
+	sendToDBStatus["DB"]["Status"] = setStatus.status
+	json = setStatus.json
 	await axios.post(urlPost, json)
 	return sendToDBStatus
 

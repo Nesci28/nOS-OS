@@ -88,8 +88,8 @@ module.exports = async function(json, step, powerStatus = '') {
         let minWatt = (maxWatt / 2).toFixed(0)       
         nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
         initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive ${nextWatt} --autorespond yes; `
-        if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
       }
+      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
 
       return initCommand
     }
