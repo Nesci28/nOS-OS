@@ -1,3 +1,8 @@
+[20-04-2018]  
+- Continued the implementation of the new back-end endpoints
+- Add the real background logo
+- Fixed an issue in mixer.sh that wasnt copying over .bashrc and .conkyrc
+
 [19-04-2018]  
 - Changed DB.js to work with the Authentication system
 

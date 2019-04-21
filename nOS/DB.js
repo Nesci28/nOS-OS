@@ -24,6 +24,7 @@ module.exports = async function(json, existingDB = '') {
 			hostname: json.Hostname
 		})
 		existingDB = existingDB.data
+		existingDB = [existingDB]
 	}
 	await checkForNewConfigs(existingDB)
 	await checkForExternalCommand(existingDB)
