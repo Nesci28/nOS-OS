@@ -15,7 +15,7 @@ module.exports = async function(json, existingDB = '') {
 	// let urlGet = "http://localhost:5000/db"
 	// let urlPost = "http://localhost:5000/rig/add"
 	const urlGet = "https://nos-server.now.sh/db"
-	const urlPost = "https://nos-server.now.sh/rig/add" 
+	const urlPost = "https://nos-server.now.sh/rig/add"
 
 	if (existingDB == '') {
 		existingDB = await axios.post(urlGet, {
@@ -24,8 +24,8 @@ module.exports = async function(json, existingDB = '') {
 			hostname: json.Hostname
 		})
 		existingDB = existingDB.data
-		existingDB = [existingDB]
 	}
+	
 	await checkForNewConfigs(existingDB)
 	await checkForExternalCommand(existingDB)
 	sendToDBStatus["DB"]["Entry"] = existingDB
@@ -47,7 +47,7 @@ module.exports = async function(json, existingDB = '') {
 	}
 
 	function checkForNewConfigs(existingDB) {
-		if (existingDB.length > 0) {
+		if (existingDB != "New rig detected!") {
 			let systemSerial = existingDB[0]["System Config"].Serial
 			if (systemSerial > json["System Config"].Serial) {
 				copy('SystemConfig.json', existingDB["System Config"])
@@ -69,7 +69,7 @@ module.exports = async function(json, existingDB = '') {
 	}
 
 	function setID(existingDB, json) {
-		if (existingDB.length == 0) {
+		if (existingDB == "New rig detected!") {
 			json["_id"] = monk.id()
 			return {
 				"status": "New rig detected, creating a new entry in the DB.",
