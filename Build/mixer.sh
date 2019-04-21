@@ -12,11 +12,11 @@ EOT
 }
 
 updateWithPackages() {
-packages="${packages}" resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
+packages="${packages[@]}" resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
 mount -a
 echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
-pacman -S "${packages}" --noconfirm
+pacman -S ${packages[@]} --noconfirm
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
 echo "" > /etc/resolv.conf
@@ -60,8 +60,6 @@ sudo cp .conkyrc /mnt/USB/home/nos/.conkyrc
 line=$(grep -n "bat:" /mnt/USB/home/nos/.conkyrc | cut -d ':' -f1)
 line2=$((line+1))
 text=$(sed "${line},${line2}d" /mnt/USB/home/nos/.conkyrc)
-# echo "${text}" > sudo tee /mnt/USB/home/nos/.conkyrc > /dev/null
-# sudo sh -c "echo \"${text}\" > /mnt/USB/home/nos/.conkyrc"
 touch copy_file.txt
 echo "${text}" > copy_file.txt
 sudo mv copy_file.txt /mnt/USB/home/nos/.conkyrc
@@ -73,8 +71,6 @@ sudo cp .bashrc /mnt/USB/home/nos/.bashrc
 line=$(wc -l .bashrc | cut -d ' ' -f1)
 line2=$((line-1))
 text=$(sed "${line},${line2}d" /mnt/USB/home/nos/.bashrc)
-# echo "${text}" > sudo tee /mnt/USB/home/nos/.bashrc > /dev/null
-# sudo sh -c "echo \"${text}\" > /mnt/USB/home/nos/.bashrc"
 touch copy_file.txt
 echo "${text}" > copy_file.txt
 sudo mv copy_file.txt /mnt/USB/home/nos/.bashrc
