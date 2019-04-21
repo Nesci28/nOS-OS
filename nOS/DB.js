@@ -24,6 +24,7 @@ module.exports = async function(json, existingDB = '') {
 			hostname: json.Hostname
 		})
 		existingDB = existingDB.data
+		if (existingDB != 'New rig detected!') existingDB = [existingDB]
 	}
 	
 	await checkForNewConfigs(existingDB)
