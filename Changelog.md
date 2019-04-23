@@ -1,13 +1,16 @@
-[21-04-2018]  
+[22-04-2019]  
+- GPUFanControl is set to 1 in nvidia-settings on the first boot
+
+[21-04-201]  
 - Fixed an issue in mixer.sh that wasnt installing new packages
 - Added in mixer.sh something to make sure the image will auto-start nOS on startup
 
-[20-04-2018]  
+[20-04-2019]  
 - Continued the implementation of the new back-end endpoints
 - Add the real background logo
 - Fixed an issue in mixer.sh that wasnt copying over .bashrc and .conkyrc
 
-[19-04-2018]  
+[19-04-2019]  
 - Changed DB.js to work with the Authentication system
 
 [18-04-2019]
