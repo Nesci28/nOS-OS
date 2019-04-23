@@ -170,6 +170,11 @@ function checkXorg() {
 
     if (xorgNumber !== gpuNumber) {
       cp.execSync('sudo nvidia-xconfig -a --cool-bits 28')
+      let command = 'sudo nvidia-settings '
+      for (let i = 0; i < gpuNumber; i++) {
+        command += '-a [gpu:' + i + ']/GPUFanControlState=1 '
+      }
+      cp.execSync(command)
       cp.execSync('sudo systemctl reboot')
     }
   }

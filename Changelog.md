@@ -1,3 +1,7 @@
+[21-04-2018]  
+- Fixed an issue in mixer.sh that wasnt installing new packages
+- Added in mixer.sh something to make sure the image will auto-start nOS on startup
+
 [20-04-2018]  
 - Continued the implementation of the new back-end endpoints
 - Add the real background logo
@@ -5,7 +9,6 @@
 
 [19-04-2018]  
 - Changed DB.js to work with the Authentication system
-
 
 [18-04-2019]
 - Fixed a display bug in PowerController
