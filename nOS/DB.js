@@ -51,21 +51,22 @@ module.exports = async function(json, existingDB = '') {
 		if (existingDB != "New rig detected!") {
 			let systemSerial = existingDB[0]["System Config"].Serial
 			if (systemSerial > json["System Config"].Serial) {
-				copy('SystemConfig.json', existingDB["System Config"])
+				copy('SystemConfig.json', existingDB[0]["System Config"])
 			}
 			let coinsSerial = existingDB[0]["Coins Config"].Serial
 			if (coinsSerial > json["Coins Config"].Serial) {
-				copy('CoinsConfig.json', existingDB["Coins Config"])
+				copy('CoinsConfig.json', existingDB[0]["Coins Config"])
 			}
 			let overclocksSerial = existingDB[0]["Overclocks Config"].Serial
 			if (overclocksSerial > json["Overclocks Config"].Serial) {
-				copy('Overclocks.json', existingDB["Overclocks Config"])
+				copy('Overclocks.json', existingDB[0]["Overclocks Config"])
 			}
 		}
 
 		function copy(config, newValues) {
-			fs.writeFileSync('../' + config, newValues)
-			cp.execSync('nosFolder=$(find /home -type d -name nOS 2>/dev/null); cd ${nosFolder}; ./start')
+			fs.writeFileSync('../' + config, JSON.stringify(newValues, undefined, 4))
+			let cd = cp.execSync('find /home -type d -name nOS 2>/dev/null').toString()
+			cp.spawn(`./${cd}/start.sh`)
 		}
 	}
 
