@@ -73,6 +73,7 @@ sudo cp .bashrc /mnt/USB/home/nos/.bashrc
 line=$(wc -l .bashrc | cut -d ' ' -f1)
 line2=$((line-1))
 text=$(sed "${line},${line2}d" /mnt/USB/home/nos/.bashrc)
+text=$(sed "${line},${line2}d" /mnt/USB/home/nos/.bashrc)
 touch copy_file.txt
 echo "${text}" > copy_file.txt
 sudo mv copy_file.txt /mnt/USB/home/nos/.bashrc

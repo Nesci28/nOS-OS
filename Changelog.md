@@ -1,3 +1,6 @@
+[24-04-2019]  
+- Fixed the function that copies over the configurations from the WebApp
+
 [22-04-2019]  
 - GPUFanControl is set to 1 in nvidia-settings on the first boot
 

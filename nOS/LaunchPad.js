@@ -18,8 +18,6 @@ const shellinabox = require('./shellinabox.js')
 // const showUI = require('./UI.js');
 const systemConfig = require('../SystemConfig.json');
 
-let minerName = ["minerNvidia", "minerAmd", "minerCpu"]
-
 if (process.argv[process.argv.length - 1] == 'stop') {
   (async() => {
     await stop()
@@ -48,6 +46,7 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
     }
 
     if (step == "init") {
+      cp.execSync('sudo timedatectl set-ntp true')
       shell = await shellinabox(step)
       json.Shellinabox = shell.Shellinabox.URL
       power = await powerControl(json, step)
@@ -73,6 +72,7 @@ async function launchPad(step, counter, coin, power, overclocks, database = '', 
 
     if (counter == 480) {
       counter = 0
+      cp.execSync('sudo timedatectl set-ntp true')
       shell = await shellinabox('shellinabox')
       json.Shellinabox = shell.Shellinabox.URL
     }

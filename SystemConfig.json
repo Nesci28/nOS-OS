@@ -1,16 +1,13 @@
 {
   "Nvidia Coin": "RVN",
-  "Amd Coin": "RVN",
+  "Amd Coin": "XMR",
   "Cpu Coin": "",
-  
   "WebApp Username": "markgagnon",
   "WebApp Password": "root",
   "Rig Hostname": "DEV_JS",
-  
   "Wifi Name": "",
   "Wifi Password": "",
-
   "Shellinabox": true,
   "EthPill": false,
-  "Serial": 1
+  "Serial": 2
 }

@@ -33,6 +33,22 @@
       "Alternative Username": "",
       "Alternative Worker": "",
       "Alternative Password": ""
+    },
+    "XMR": {
+      "Algo": "CNR",
+      "Miner": "TeamRedMiner",
+      "Options": "",
+      "Wallet": "421cTQvgchUBnAVzt9hwR4KuBXkHAyf241wKVeZ1f9KbcBfS3KtuBpRMVw6bxGPMRMj5Czi6DamjSHgvfUW6YBLBQgV7jiw.nesciAMD/markgagnon28@gmail.com",
+      "Pool": "xmr-us-east1.nanopool.org",
+      "Port": "14444",
+      "Username": "",
+      "Worker": "",
+      "Password": "x",
+      "Alternative Pool": "",
+      "Alternative Port": "",
+      "Alternative Username": "",
+      "Alternative Worker": "",
+      "Alternative Password": ""
     }
   },
   "Serial": 1
