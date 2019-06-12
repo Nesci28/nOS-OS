@@ -1,141 +1,162 @@
-module.exports = async function(json, step, powerStatus = '') {
+module.exports = async function(json, step, powerStatus = "") {
   // Dependancies
-  const cp = require('child_process');
+  const cp = require("child_process");
 
   // Setup
-  const ocHelper = require('./helpers/HiveOS_API.js');
-  const ocSettings = require('../Overclocks.json');
+  const ocHelper = require("./helpers/HiveOS_API.js");
+  const ocSettings = require("../Overclocks.json");
 
-  if (powerStatus == '') {
+  if (powerStatus == "") {
     powerStatus = {
-      "Power": {
-        "Nvidia": [],
-        "Amd": []
+      Power: {
+        Nvidia: [],
+        Amd: []
       }
     };
   }
 
   return (async () => {
-    let wattCommand = ''
+    let wattCommand = "";
     if (step == "init") {
-      if (json.Nvidia.GPU.length > 0) wattCommand = await initialize(json, json.Nvidia.GPU.length, "Nvidia")
-      if (wattCommand !== '') cp.execSync(wattCommand)
+      if (json.Nvidia.GPU.length > 0)
+        wattCommand = await initialize(json, json.Nvidia.GPU.length, "Nvidia");
+      if (wattCommand !== "") cp.execSync(wattCommand);
 
-      if (json.Amd.GPU.length > 0) wattCommand = await initialize(json, json.Amd.GPU.length, "Amd")
-      if (wattCommand !== '') {
+      if (json.Amd.GPU.length > 0)
+        wattCommand = await initialize(json, json.Amd.GPU.length, "Amd");
+      if (wattCommand !== "") {
         try {
-          cp.execSync(wattCommand)
-        } catch{}
-      }
-    }
-
-    if (step !== "init" && step !== "stop") {
-      if (json.Nvidia.GPU.length > 0) wattCommand = await checkCurrent(json, json.Nvidia.GPU.length, "Nvidia")
-      if (wattCommand !== '') cp.execSync(wattCommand)
-
-      if (json.Amd.GPU.length > 0) wattCommand = await checkCurrent(json, json.Amd.GPU.length, "Amd")
-      if (wattCommand !== '') {
-        try {
-          cp.execSync(wattCommand)
+          cp.execSync(wattCommand);
         } catch {}
       }
     }
 
-    return powerStatus
+    if (step !== "init" && step !== "stop") {
+      if (json.Nvidia.GPU.length > 0)
+        wattCommand = await checkCurrent(
+          json,
+          json.Nvidia.GPU.length,
+          "Nvidia"
+        );
+      if (wattCommand !== "") cp.execSync(wattCommand);
+
+      if (json.Amd.GPU.length > 0)
+        wattCommand = await checkCurrent(json, json.Amd.GPU.length, "Amd");
+      if (wattCommand !== "") {
+        try {
+          cp.execSync(wattCommand);
+        } catch {}
+      }
+    }
+
+    return powerStatus;
   })();
 
   async function initialize(json, gpuNumber, brand) {
-    let maxPower = ocSettings[brand]["Powerlevel_%"]
-    let initCommand = ''
-    let nextWatt
+    let maxPower = ocSettings[brand]["Powerlevel_%"];
+    let initCommand = "";
+    let nextWatt;
 
     for (let i = 0; i < gpuNumber; i++) {
       if (brand == "Nvidia") {
-        if (ocSettings[brand]["Use Hive_OC"]) {     
-        let hiveOC = await ocHelper(json[brand]["GPU"][i].Name, 'OC')
-          if (hiveOC !== 'no DB') {
-            if (hiveOC.power_limit) initCommand += `sudo nvidia-smi -i ${i} -pl ${hiveOC.power_limit}; ` 
-            powerStatus["Power"][brand][i] = hiveOC.power_limit
-            nextWatt = hiveOC.power_limit
+        if (ocSettings[brand]["Use Hive_OC"]) {
+          let hiveOC = await ocHelper(json[brand]["GPU"][i].Name, "OC");
+          if (hiveOC !== "no DB") {
+            if (hiveOC.power_limit)
+              initCommand += `sudo nvidia-smi -i ${i} -pl ${
+                hiveOC.power_limit
+              }; `;
+            powerStatus["Power"][brand][i] = hiveOC.power_limit;
+            nextWatt = hiveOC.power_limit;
           } else {
-            initCommand += defaultValues(json, maxPower, i, brand, initCommand)
-          }          
+            initCommand += defaultValues(json, maxPower, i, brand, initCommand);
+          }
+        } else {
+          initCommand = defaultValues(json, maxPower, i, brand, initCommand);
         }
       } else if (brand == "Amd") {
-        initCommand = defaultValues(json, maxPower, i, brand, initCommand)
+        initCommand = defaultValues(json, maxPower, i, brand, initCommand);
       }
-      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
+      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt;
     }
-    return initCommand
+    return initCommand;
 
-    function defaultValues(json, maxPower, i, brand, initCommand = '') {
+    function defaultValues(json, maxPower, i, brand, initCommand = "") {
       if (brand == "Nvidia") {
-        let minWatt = json[brand]["GPU"][i]["Min Watt"].split(' ')[0]
-        let maxWatt = json[brand]["GPU"][i]["Max Watt"].split(' ')[0]
-        nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
-        initCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
+        let minWatt = json[brand]["GPU"][i]["Min Watt"].split(" ")[0];
+        let maxWatt = json[brand]["GPU"][i]["Max Watt"].split(" ")[0];
+        nextWatt = Math.round(
+          Number(minWatt) + ((maxWatt - minWatt) / 50) * (maxPower - 50)
+        );
+        initCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `;
       }
 
-      if (brand == "Amd") {  
-        let amdGpuID = json[brand]["GPU"][i]["ID"]   
+      if (brand == "Amd") {
+        let amdGpuID = json[brand]["GPU"][i]["ID"];
         try {
-          cp.execSync(`sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive 100000 --autorespond yes`).toString()
-        } catch(ex) {
-          var maxWatt = ex.stdout.toString()
-          maxWatt = parseInt(maxWatt.match(/than (.*)W/)[1])
+          cp.execSync(
+            `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive 100000 --autorespond yes`
+          ).toString();
+        } catch (ex) {
+          var maxWatt = ex.stdout.toString();
+          maxWatt = parseInt(maxWatt.match(/than (.*)W/)[1]);
         }
 
-        let minWatt = (maxWatt / 2).toFixed(0)       
-        nextWatt = Math.round(Number(minWatt) + (maxWatt - minWatt) / 50 * (maxPower - 50))
-        initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive ${nextWatt} --autorespond yes; `
+        let minWatt = (maxWatt / 2).toFixed(0);
+        nextWatt = Math.round(
+          Number(minWatt) + ((maxWatt - minWatt) / 50) * (maxPower - 50)
+        );
+        initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive ${nextWatt} --autorespond yes; `;
       }
-      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
+      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt;
 
-      return initCommand
+      return initCommand;
     }
   }
 
   function checkCurrent(json, gpuNumber, brand) {
-    let maxFanSpeed = ocSettings[brand]["Max FanSpeed"]
-    let ocSettingMax = ocSettings[brand]["Max Temperature"] + 3
-    let wattCommand = ''
-    
-    for (var i = 0; i < gpuNumber; i++) {
-      let nextWatt
-      let currentFanSpeed
-      let minWatt
-      let amdGpuID
+    let maxFanSpeed = ocSettings[brand]["Max FanSpeed"];
+    let ocSettingMax = ocSettings[brand]["Max Temperature"] + 3;
+    let wattCommand = "";
 
-      if (brand == 'Nvidia') {
-        currentFanSpeed = Number(json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, ''))
-        minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].replace(/ W/, ''))
+    for (var i = 0; i < gpuNumber; i++) {
+      let nextWatt;
+      let currentFanSpeed;
+      let minWatt;
+      let amdGpuID;
+
+      if (brand == "Nvidia") {
+        currentFanSpeed = Number(
+          json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, "")
+        );
+        minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].replace(/ W/, ""));
       }
-      if (brand == 'Amd') {
-        currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"]
-        minWatt = json[brand]["GPU"][i]["Min Watt"]
+      if (brand == "Amd") {
+        currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"];
+        minWatt = json[brand]["GPU"][i]["Min Watt"];
       }
-      let currentTemp = json[brand]["GPU"][i]["Temperature"]
-      
+      let currentTemp = json[brand]["GPU"][i]["Temperature"];
+
       if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingMax) {
         if (brand == "Nvidia") {
-          nextWatt = json[brand]["GPU"][i]["Watt"].split('.')[0] - 5
+          nextWatt = json[brand]["GPU"][i]["Watt"].split(".")[0] - 5;
           if (nextWatt >= minWatt) {
-            wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `
+            wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `;
           }
         }
         if (brand == "Amd") {
-          nextWatt = Math.round(json[brand]["GPU"][i]["Watt"]) - 5
+          nextWatt = Math.round(json[brand]["GPU"][i]["Watt"]) - 5;
           if (nextWatt >= minWatt) {
-            amdGpuID = json[brand]["GPU"][i]["ID"]
-            wattCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive ${nextWatt} --autorespond yes; `
+            amdGpuID = json[brand]["GPU"][i]["ID"];
+            wattCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive ${nextWatt} --autorespond yes; `;
           }
         }
       }
 
-      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt
+      if (nextWatt) powerStatus["Power"][brand][i] = nextWatt;
       // else powerStatus["Power"][brand][i] = parseInt(json[brand]["GPU"][i]["Watt"].replace(/W /, ''))
     }
-  
-    return wattCommand
+
+    return wattCommand;
   }
-}
+};
