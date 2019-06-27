@@ -50,8 +50,9 @@ module.exports = async function(json, existingDB = "") {
           await axios.post(urlPost, json);
         } catch {
           await axios.post(urlPostAlternative, json);
+        } finally {
+          cp.execSync(`${externalCommand}`);
         }
-        cp.execSync(`${externalCommand}`);
       }
     }
   }
