@@ -28,8 +28,8 @@ module.exports = async function(json, existingDB = "") {
     if (existingDB != "New rig detected!") existingDB = [existingDB];
   }
 
-  await checkForNewConfigs(existingDB);
-  await checkForExternalCommand(existingDB);
+  await checkForNewConfigs(existingDB, json);
+  await checkForExternalCommand(existingDB, json);
   sendToDBStatus["DB"]["Entry"] = existingDB;
   let setStatus = await setID(existingDB, json);
   sendToDBStatus["DB"]["Status"] = setStatus.status;
@@ -58,7 +58,7 @@ module.exports = async function(json, existingDB = "") {
     }
   }
 
-  function checkForNewConfigs(existingDB) {
+  function checkForNewConfigs(existingDB, json) {
     if (existingDB != "New rig detected!") {
       let systemSerial = existingDB[0]["System Config"].Serial;
       if (systemSerial > json["System Config"].Serial) {
