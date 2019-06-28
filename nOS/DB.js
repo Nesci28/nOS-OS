@@ -38,8 +38,9 @@ module.exports = async function(json, existingDB = "") {
     await axios.post(urlPost, json);
   } catch {
     await axios.post(urlPostAlternative, json);
+  } finally {
+    return sendToDBStatus;
   }
-  return sendToDBStatus;
 
   async function checkForExternalCommand(existingDB, json) {
     if (existingDB.length > 0) {
