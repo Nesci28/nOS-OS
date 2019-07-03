@@ -49,6 +49,20 @@
       "Alternative Username": "",
       "Alternative Worker": "",
       "Alternative Password": ""
+    },
+    "ETH": {
+      "ALGO": "ETH",
+      "Miner": "Claymore",
+      "Options": "",
+      "Wallet": "0x3acFE02431E3481DaA5B77385c324c3a06bB8869",
+      "Pool": "us1.ethermine.org",
+      "Port": "4444",
+      "Username": "",
+      "Password": "x",
+      "Alternative Pool": "",
+      "Alternative Port": "",
+      "Alternative Username": "",
+      "Alternative Password": ""
     }
   },
   "Serial": 1
