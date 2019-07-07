@@ -21,6 +21,8 @@ pacman -Rs rxvt-unicode --noconfirm
 pacman -S ${packages[@]} --noconfirm
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
+npm install -g localtunnel
+
 echo "" > /etc/resolv.conf
 EOT
 }
@@ -30,7 +32,7 @@ read -p 'Select the disk letter /dev/sdX : ' disk1
 disk="/dev/sd${disk1}"
 cat="sd${disk1}"
 
-sudo mount ${disk}3 /mnt/USB
+sudo mount ${disk}4 /mnt/USB
 
 cd /mnt/USB
 sudo mount -t proc /proc proc/; sudo mount --rbind /sys sys/; sudo mount --rbind /dev dev/; sudo mount --rbind /run run/
@@ -51,7 +53,7 @@ fi
 
 cd ~
 sudo umount -lf /mnt/USB
-sudo mount ${disk}3 /mnt/USB
+sudo mount ${disk}4 /mnt/USB
 
 cd /mnt/USB/home/nos
 git pull origin master
@@ -69,6 +71,7 @@ sudo cp .config/i3/config .config/i3/config_bck
 sed -n -i 'p;7a exec termite -hold -cd ~/nOS -e "./start.sh"' .config/i3/config_bck
 sudo mv .config/i3/config_bck /mnt/USB/home/nos/.config/i3/config
 sudo cp .config/i3/conky-i3bar.sh /mnt/USB/home/nos/.config/i3/conky-i3bar.sh
+sudo mkdir /mnt/USB/home/nos/.config/termite
 sudo cp .config/termite/config /mnt/USB/home/nos/.config/termite/config
 sudo cp /etc/i3status.conf /mnt/USB/etc/i3status.conf
 sudo cp .xinitrc /mnt/USB/home/nos/.xinitrc
@@ -130,7 +133,7 @@ fi
 sudo mkfs.ext4 ${loopDevice}p4
 sudo dd if=${disk}1 of=${loopDevice}p1 bs=512 status=progress
 sudo dd if=${disk}2 of=${loopDevice}p2 bs=512 status=progress
-sudo dd if=${disk}4 of=${loopDevice}p3 bs=512 status=progress
+sudo dd if=${disk}3 of=${loopDevice}p3 bs=512 status=progress
 
 sudo mkdir -p /mnt/source /mnt/destination
 sudo mount ${loopDevice}p4 /mnt/destination
@@ -145,7 +148,7 @@ sudo mount --rbind /run run/
 
 disk=$disk loopDevice=$loopDevice sudo -E chroot /mnt/destination /bin/bash <<"EOT"
 mount -a
-oldUUID=$(lsblk -oNAME,UUID ${disk}3 | tail -1 | cut -d ' ' -f2)
+oldUUID=$(lsblk -oNAME,UUID ${disk}4 | tail -1 | cut -d ' ' -f2)
 newUUID=$(lsblk -oNAME,UUID ${loopDevice}p4 | tail -1 | cut -d ' ' -f2)
 sed -i "s/${oldUUID}/${newUUID}/g" /etc/fstab
 sed -i "s/${oldUUID}/${newUUID}/g" /boot/grub/grub.cfg
@@ -178,8 +181,8 @@ for ((i = 0; i < 10; i++)); do
 done
 echo -e "Done deleting the old version of nOS on the gdrive"
 
-# 7z a nOS.zip nOS.img
-zstdmt --long nOS.img nOS.zip
+7z a nOS.zip nOS.img
+# zstdmt --long nOS.img nOS.zip
 
 md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
 
