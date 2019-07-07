@@ -9,7 +9,7 @@ if tmux list-sessions | grep miner ; then
   tmux kill-session -t miner
 fi
 
-urxvt -e tmux new-session -A -s miner &
+termite -e "tmux new-session -A -s miner" &
 
 jlist=$(pm2 jlist)
 jlistLength=$(echo "${jlist}" | jq '.[].name' | wc -l)

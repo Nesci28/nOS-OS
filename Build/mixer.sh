@@ -16,6 +16,8 @@ packages="${packages[@]}" resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <
 mount -a
 echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
+pacman -Rs chromium --noconfirm
+pacman -Rs rxvt-unicode --noconfirm
 pacman -S ${packages[@]} --noconfirm
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
@@ -64,9 +66,10 @@ touch copy_file.txt
 echo "${text}" > copy_file.txt
 sudo mv copy_file.txt /mnt/USB/home/nos/.conkyrc
 sudo cp .config/i3/config .config/i3/config_bck
-sed -n -i 'p;7a exec urxvt -hold -cd ~/nOS -e "./start.sh"' .config/i3/config_bck
+sed -n -i 'p;7a exec termite -hold -cd ~/nOS -e "./start.sh"' .config/i3/config_bck
 sudo mv .config/i3/config_bck /mnt/USB/home/nos/.config/i3/config
 sudo cp .config/i3/conky-i3bar.sh /mnt/USB/home/nos/.config/i3/conky-i3bar.sh
+sudo cp .config/termite/config /mnt/USB/home/nos/.config/termite/config
 sudo cp /etc/i3status.conf /mnt/USB/etc/i3status.conf
 sudo cp .xinitrc /mnt/USB/home/nos/.xinitrc
 sudo cp .bashrc /mnt/USB/home/nos/.bashrc

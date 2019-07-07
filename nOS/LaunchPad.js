@@ -5,6 +5,13 @@ const util = require("util");
 const md5File = require("md5-file");
 const mv = require("mv");
 const wifi = require("node-wifi");
+const prettyjson = require("prettyjson");
+const prettyjsonOptions = {
+  keysColor: "white",
+  dashColor: "magenta",
+  stringColor: "green",
+  numberColor: "yellow"
+};
 
 // Requirements
 const info = require("./getInfo.js");
@@ -53,6 +60,9 @@ async function launchPad(
 ) {
   if (step !== "shellinabox") {
     process.stdout.write("\033c");
+    if (step !== "init") {
+      console.log("Updating the values...");
+    }
     json = await info(step, json, counter);
   }
 
@@ -63,8 +73,13 @@ async function launchPad(
     power = await powerControl(json, step);
     overclocks = await ocControl(json, step);
     coin = await coins(json);
-    cp.execSync("urxvt -e ./tmux.sh && exit &");
+    cp.exec("./tmux.sh && exit &");
+    // cp.execSync("termite -e ./tmux.sh && exit &");
     database = await DB(json, "");
+  }
+
+  if (counter == 5) {
+    overclocks = await ocControl(json, "rxboost", overclocks);
   }
 
   if (step == "init" || step == "running") {
@@ -84,21 +99,35 @@ async function launchPad(
     counter = 0;
     cp.execSync("sudo timedatectl set-ntp true");
     shell = await shellinabox("shellinabox");
-    json.Shellinabox = shell.Shellinabox.URL;
+    json.Shellinabox.Ngrok = shell.Shellinabox.URL;
+    json.Shellinabox.Localtunnel = shell.Localtunnel.URL;
   }
 
   // let ui = await showUI(json)
-
+  process.stdout.write("\033c");
   // console.log(ui)
-  console.log(util.inspect(coin, false, null, true));
-  console.log(util.inspect(power, false, null, true));
+  // console.log(util.inspect(coin, false, null, true));
+  // console.log(util.inspect(power, false, null, true));
+  console.log(prettyjson.render(coin, prettyjsonOptions));
+  console.log("\n");
+  console.log(prettyjson.render(power, prettyjsonOptions));
+  console.log("\n");
   if (overclocks !== undefined) {
-    console.log(util.inspect(overclocks, false, null, true));
+    // console.log(util.inspect(overclocks, false, null, true));
+    console.log(prettyjson.render(overclocks, prettyjsonOptions));
+    console.log("\n");
   }
-  console.log(util.inspect(temperature, false, null, true));
-  console.log(util.inspect(watch, false, null, true));
-  console.log(database);
-  console.log(shell, counter);
+  // console.log(util.inspect(temperature, false, null, true));
+  // console.log(util.inspect(watch, false, null, true));
+  // console.log(database);
+  // console.log(shell, counter);
+  console.log(prettyjson.render(temperature, prettyjsonOptions));
+  console.log("\n");
+  // console.log(prettyjson.render(watch, prettyjsonOptions));
+  // console.log(prettyjson.render(database, prettyjsonOptions));
+  console.log(prettyjson.render(shell, prettyjsonOptions));
+  console.log("\n");
+  console.log("Ngrok Counter: " + counter);
 
   setTimeout(async () => {
     counter++;

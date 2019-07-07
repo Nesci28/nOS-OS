@@ -35,7 +35,10 @@ module.exports = function(step, json = "", counter) {
       Password: systemConfig["WebApp Password"],
       Hostname: systemConfig["Rig Hostname"],
       IP: ip.address(),
-      Shellinabox: null,
+      Shellinabox: {
+        Ngrok: null,
+        Localtunnel: null
+      },
       "Local GitHash": null,
       "Remote GitHash": null,
       "External Command": null,
