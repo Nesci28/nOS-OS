@@ -178,7 +178,8 @@ for ((i = 0; i < 10; i++)); do
 done
 echo -e "Done deleting the old version of nOS on the gdrive"
 
-7z a nOS.zip nOS.img
+# 7z a nOS.zip nOS.img
+zstdmt --long nOS.img nOS.zip
 
 md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
 
