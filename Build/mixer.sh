@@ -89,10 +89,11 @@ sudo cp Overclocks.json /mnt/USB/home/nos/Overclocks.json
 cd /mnt/USB/home/nos
 
 size=$(sudo df -h /mnt/USB | tail -1 | sed 's/  */ /g' | cut -d ' ' -f3 | sed 's/G//g')
-size=$(echo "(${size} + 0.6) * 1073741824" | scale=0 bc)
+size=$(echo "(${size} + 0.6)" | scale=0 bc)
+size=${size%.*}
 
 cd ~/Build/Image
-dd if=/dev/zero of=nOS.img bs=${size} count=1 status=progress
+fallocate -l ${size}G nOS.img
 sleep 5
 sudo gdisk nOS.img <<EOF
 o
