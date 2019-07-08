@@ -5,8 +5,11 @@ resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
 mount -a
 echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
+pacman -Rs chromium --noconfirm
+pacman -Rs rxvt-unicode --noconfirm
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
+npm install -g localtunnel
 echo "" > /etc/resolv.conf
 EOT
 }
@@ -18,11 +21,10 @@ echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
 pacman -Rs chromium --noconfirm
 pacman -Rs rxvt-unicode --noconfirm
-pacman -S ${packages[@]} --noconfirm
 pacman -Syu --noconfirm
+pacman -S ${packages[@]} --noconfirm
 pacman -Scc --noconfirm
 npm install -g localtunnel
-
 echo "" > /etc/resolv.conf
 EOT
 }
@@ -68,10 +70,11 @@ touch copy_file.txt
 echo "${text}" > copy_file.txt
 sudo mv copy_file.txt /mnt/USB/home/nos/.conkyrc
 sudo cp .config/i3/config .config/i3/config_bck
-sed -n -i 'p;7a exec termite -hold -cd ~/nOS -e "./start.sh"' .config/i3/config_bck
+sed -n -i 'p;7a exec termite --hold -e "/home/nos/nOS/start.sh"' .config/i3/config_bck
 sudo mv .config/i3/config_bck /mnt/USB/home/nos/.config/i3/config
 sudo cp .config/i3/conky-i3bar.sh /mnt/USB/home/nos/.config/i3/conky-i3bar.sh
 sudo mkdir /mnt/USB/home/nos/.config/termite
+sudo cp .compton.conf /mnt/USB/home/nos/.compton.conf
 sudo cp .config/termite/config /mnt/USB/home/nos/.config/termite/config
 sudo cp /etc/i3status.conf /mnt/USB/etc/i3status.conf
 sudo cp .xinitrc /mnt/USB/home/nos/.xinitrc
@@ -90,7 +93,6 @@ cd /mnt/USB/home/nos
 
 size=$(sudo df -h /mnt/USB | tail -1 | sed 's/  */ /g' | cut -d ' ' -f3 | sed 's/G//g')
 size=$(echo "(${size} + 0.6)" | scale=0 bc)
-size=${size%.*}
 
 cd ~/Build/Image
 fallocate -l ${size}G nOS.img
