@@ -67,6 +67,7 @@ async function launchPad(
   }
 
   if (step == "init") {
+    cp.execSync("sudo ~/nOS/helpers/ROC-smi/rocm-smi -r");
     cp.execSync("sudo timedatectl set-ntp true");
     shell = await shellinabox(step);
     json.Shellinabox = shell.Shellinabox.URL;
