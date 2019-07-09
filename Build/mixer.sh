@@ -89,6 +89,7 @@ sudo mv copy_file.txt /mnt/USB/home/nos/.bashrc
 sudo cp SystemConfig.json /mnt/USB/home/nos/SystemConfig.json
 sudo cp CoinsConfig.json /mnt/USB/home/nos/CoinsConfig.json
 sudo cp Overclocks.json /mnt/USB/home/nos/Overclocks.json
+sudo chmod -R a+rwX /mnt/USB/home/nos
 cd /mnt/USB/home/nos
 
 size=$(sudo df -h /mnt/USB | tail -1 | sed 's/  */ /g' | cut -d ' ' -f3 | sed 's/G//g')
