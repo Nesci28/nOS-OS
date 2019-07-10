@@ -5,11 +5,8 @@ resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <<"EOT"
 mount -a
 echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
-pacman -Rs chromium --noconfirm
-pacman -Rs rxvt-unicode --noconfirm
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
-npm install -g localtunnel
 echo "" > /etc/resolv.conf
 EOT
 }
@@ -19,12 +16,9 @@ packages="${packages[@]}" resolv="${resolv}" sudo -E chroot /mnt/USB /bin/bash <
 mount -a
 echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
-pacman -Rs chromium --noconfirm
-pacman -Rs rxvt-unicode --noconfirm
 pacman -Syu --noconfirm
 pacman -S ${packages[@]} --noconfirm
 pacman -Scc --noconfirm
-npm install -g localtunnel
 echo "" > /etc/resolv.conf
 EOT
 }

@@ -1,6 +1,7 @@
 module.exports = function(step, json = "", counter) {
   // Dependancies
   const cp = require("child_process");
+  const fs = require("fs");
   const ip = require("ip");
   const simpleGit = require("simple-git/promise")();
   const readLastLines = require("read-last-lines");

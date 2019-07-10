@@ -20,10 +20,14 @@ if hasattr(__builtins__, 'raw_input'):
     input = raw_input
 
 # Version of the JSON output used to save clocks
-JSON_VERSION = 1
+CLOCK_JSON_VERSION = 1
 
 # Set to 1 if an error occurs
 RETCODE = 0
+
+# If we want JSON format output instead
+PRINT_JSON = False
+JSON_DATA = {}
 
 def relaunchAsSudo():
     """ Relaunch the SMI as sudo
@@ -36,10 +40,58 @@ def relaunchAsSudo():
 
 drmprefix = '/sys/class/drm'
 hwmonprefix = '/sys/class/hwmon'
-powerprefix = '/sys/kernel/debug/dri/'
+debugprefix = '/sys/kernel/debug/dri'
+moduleprefix = '/sys/module'
 
-headerSpacer = '='*24
-logSpacer = headerSpacer * 4
+headerString = 'ROCm System Management Interface'
+footerString = 'End of ROCm SMI Log'
+
+# 80 characters for string and '=' fillers will be the soft-max
+headerSpacer = '='* int((80 - (len(headerString))) / 2)
+footerSpacer = '='* int((80 - (len(footerString))) / 2)
+
+# If the string has an odd number of digits, pad with a space for symmetry
+if len(headerString) % 2:
+    headerString += ' '
+if len(footerString) % 2:
+    footerString += ' '
+logSpacer = '=' * 80
+
+# These are the valid clock types that can be returned/modified,
+# dcefclk (only supported on Vega10 and later)
+# fclk (only supported on Vega20 and later)
+# mclk
+# pcie (PCIe speed, sometimes referred to as lclk for Link clock
+# sclk
+# socclk (only supported on Vega10 and later)
+validClockNames = ['dcefclk', 'fclk', 'mclk', 'pcie', 'sclk', 'socclk']
+
+# These are the valid memory info types that are currently supported
+# vram
+# vis_vram (Visible VRAM)
+# gtt
+validMemTypes = ['vram', 'vis_vram', 'gtt']
+
+# These are the types of supported RAS blocks and their respective enums
+# gfx
+# sdma
+# umc
+validRasBlocks = {'gfx' : 1<<2, 'sdma' : 1<<1, 'umc': 1<<0}
+# These are the valid input types to a RAS file
+validRasActions = ['disable', 'enable', 'inject']
+# Right now, these are the only supported memory error types,
+# ue - Uncorrectable error; ce - Correctable error
+validRasTypes = ['ue', 'ce']
+
+# List of software components that we support printing versioning information
+validVersionComponents = ['driver']
+
+# Supported firmware blocks
+validFwBlocks = {'vce', 'uvd', 'mc', 'me', 'pfp',
+'ce', 'rlc', 'rlc_srlc', 'rlc_srlg', 'rlc_srls',
+'mec', 'mec2', 'sos', 'asd', 'ta_ras', 'ta_xgmi',
+'smc', 'sdma', 'sdma2', 'vcn', 'dmcu'}
+
 
 valuePaths = {
     'id' : {'prefix' : drmprefix, 'filepath' : 'device', 'needsparse' : True},
@@ -47,52 +99,107 @@ valuePaths = {
     'perf' : {'prefix' : drmprefix, 'filepath' : 'power_dpm_force_performance_level', 'needsparse' : False},
     'sclk_od' : {'prefix' : drmprefix, 'filepath' : 'pp_sclk_od', 'needsparse' : False},
     'mclk_od' : {'prefix' : drmprefix, 'filepath' : 'pp_mclk_od', 'needsparse' : False},
-    'sclk' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_sclk', 'needsparse' : False},
+    'dcefclk' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_dcefclk', 'needsparse' : False},
+    'fclk' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_fclk', 'needsparse' : False},
     'mclk' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_mclk', 'needsparse' : False},
-    'pclk' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_pcie', 'needsparse' : False},
+    'pcie' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_pcie', 'needsparse' : False},
+    'sclk' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_sclk', 'needsparse' : False},
+    'socclk' : {'prefix' : drmprefix, 'filepath' : 'pp_dpm_socclk', 'needsparse' : False},
     'clk_voltage' : {'prefix' : drmprefix, 'filepath' : 'pp_od_clk_voltage', 'needsparse' : False},
+    'voltage' : {'prefix' : hwmonprefix, 'filepath' : 'in0_input', 'needsparse' : False},
     'profile' : {'prefix' : drmprefix, 'filepath' : 'pp_power_profile_mode', 'needsparse' : False},
     'use' : {'prefix' : drmprefix, 'filepath' : 'gpu_busy_percent', 'needsparse' : False},
     'pcie_bw' : {'prefix' : drmprefix, 'filepath' : 'pcie_bw', 'needsparse' : False},
+    'replay_count' : {'prefix' : drmprefix, 'filepath' : 'pcie_replay_count', 'needsparse' : False},
     'vendor' : {'prefix' : drmprefix, 'filepath' : 'vendor', 'needsparse' : False},
     'fan' : {'prefix' : hwmonprefix, 'filepath' : 'pwm1', 'needsparse' : False},
     'fanmax' : {'prefix' : hwmonprefix, 'filepath' : 'pwm1_max', 'needsparse' : False},
     'fanmode' : {'prefix' : hwmonprefix, 'filepath' : 'pwm1_enable', 'needsparse' : False},
-    'temp' : {'prefix' : hwmonprefix, 'filepath' : 'temp1_input', 'needsparse' : True},
+    'temp1' : {'prefix' : hwmonprefix, 'filepath' : 'temp1_input', 'needsparse' : True},
+    'temp1_label' : {'prefix' : hwmonprefix, 'filepath' : 'temp1_label', 'needsparse' : False},
+    'temp2' : {'prefix' : hwmonprefix, 'filepath' : 'temp2_input', 'needsparse' : True},
+    'temp2_label' : {'prefix' : hwmonprefix, 'filepath' : 'temp2_label', 'needsparse' : False},
+    'temp3' : {'prefix' : hwmonprefix, 'filepath' : 'temp3_input', 'needsparse' : True},
+    'temp3_label' : {'prefix' : hwmonprefix, 'filepath' : 'temp3_label', 'needsparse' : False},
     'power' : {'prefix' : hwmonprefix, 'filepath' : 'power1_average', 'needsparse' : True},
     'power_cap' : {'prefix' : hwmonprefix, 'filepath' : 'power1_cap', 'needsparse' : False},
     'power_cap_max' : {'prefix' : hwmonprefix, 'filepath' : 'power1_cap_max', 'needsparse' : False},
-    'power_cap_min' : {'prefix' : hwmonprefix, 'filepath' : 'power1_cap_min', 'needsparse' : False}
+    'power_cap_min' : {'prefix' : hwmonprefix, 'filepath' : 'power1_cap_min', 'needsparse' : False},
+    'dpm_state' : {'prefix' : drmprefix, 'filepath' : 'power_dpm_state', 'needsparse' : False},
+    'vram_used' : {'prefix' : drmprefix, 'filepath' : 'mem_info_vram_used', 'needsparse' : False},
+    'vram_total' : {'prefix' : drmprefix, 'filepath' : 'mem_info_vram_total', 'needsparse' : False},
+    'vis_vram_used' : {'prefix' : drmprefix, 'filepath' : 'mem_info_vis_vram_used', 'needsparse' : False},
+    'vis_vram_total' : {'prefix' : drmprefix, 'filepath' : 'mem_info_vis_vram_total', 'needsparse' : False},
+    'gtt_used' : {'prefix' : drmprefix, 'filepath' : 'mem_info_gtt_used', 'needsparse' : False},
+    'gtt_total' : {'prefix' : drmprefix, 'filepath' : 'mem_info_gtt_total', 'needsparse' : False},
+    'ras_gfx' : {'prefix' : drmprefix, 'filepath' : 'ras/gfx_err_count', 'needsparse' : False},
+    'ras_sdma' : {'prefix' : drmprefix, 'filepath' : 'ras/sdma_err_count', 'needsparse' : False},
+    'ras_umc' : {'prefix' : drmprefix, 'filepath' : 'ras/umc_err_count', 'needsparse' : False},
+    'ras_features' : {'prefix' : drmprefix, 'filepath' : 'ras/features', 'needsparse' : True},
+    'ras_ctrl' : {'prefix' : debugprefix, 'filepath' : 'ras/ras_ctrl', 'needsparse' : False},
+    'gpu_reset' : {'prefix' : debugprefix, 'filepath' : 'amdgpu_gpu_recover', 'needsparse' : False},
+    'driver' : {'prefix' : moduleprefix, 'filepath' : 'amdgpu/version', 'needsparse' : False}
 }
+
+for block in validFwBlocks:
+    valuePaths['%s_fw_version' % block] = {'prefix' : drmprefix, 'filepath' : 'fw_version/%s_fw_version' % block, 'needsparse' : False}
+#SMC has different formatting for its version
+valuePaths['smc_fw_version']['needsparse'] = True
+
+def getFilePath(device, key):
+    """ Return the filepath for a specific device and key
+
+    Parameters:
+    device -- Device whose filepath will be returned
+    key -- [$valuePaths.keys()] The sysfs path to return
+    """
+    if key not in valuePaths.keys():
+        print('Cannot get file path for key %s' % key)
+        logging.debug('Key %s not present in valuePaths map' % key)
+        return None
+
+    pathDict = valuePaths[key]
+    fileValue = ''
+
+    if pathDict['prefix'] == hwmonprefix:
+        # HW Monitor values have a different path structure
+        if not getHwmonFromDevice(device):
+            logging.warning('GPU[%s]\t: No corresponding HW Monitor found', parseDeviceName(device))
+            return None
+        filePath = os.path.join(getHwmonFromDevice(device), pathDict['filepath'])
+    elif pathDict['prefix'] == debugprefix:
+        # Kernel DebugFS values have a different path structure
+        filePath = os.path.join(pathDict['prefix'], parseDeviceName(device), pathDict['filepath'])
+    elif pathDict['prefix'] == drmprefix:
+        filePath = os.path.join(pathDict['prefix'], device, 'device', pathDict['filepath'])
+    else:
+        # Otherwise, just join the 2 fields without any parsing
+        filePath = os.path.join(pathDict['prefix'], pathDict['filepath'])
+
+    if not os.path.isfile(filePath):
+        return None
+    return filePath
 
 
 def getSysfsValue(device, key):
     """ Return the desired SysFS value for a specified device
 
     Parameters:
-    device -- Device to return the desired value
-    value -- SysFS value to return (defined in dict above)
+    device -- DRM device identifier
+    key -- [$valuePaths.keys()] Key referencing desired SysFS file
     """
+    filePath = getFilePath(device, key)
     pathDict = valuePaths[key]
-    fileValue = ''
-    filePath = os.path.join(pathDict['prefix'], device, 'device', pathDict['filepath'])
 
-    if pathDict['prefix'] == hwmonprefix:
-        # HW Monitor values have a different path structure
-        if not getHwmonFromDevice(device):
-            return None
-        filePath = os.path.join(getHwmonFromDevice(device), pathDict['filepath'])
-
-    if not os.path.isfile(filePath):
+    if not filePath:
         return None
-
     # Use try since some sysfs files like power1_average will throw -EINVAL
     # instead of giving something useful.
     try:
         with open(filePath, 'r') as fileContents:
             fileValue = fileContents.read().rstrip('\n')
     except:
-        printLog(device, 'WARNING: Unable to read ' + filePath)
+        logging.warning('GPU[%s]\t: Unable to read %s', parseDeviceName(device), filePath)
         return None
 
     # Some sysfs files aren't a single line of text
@@ -100,7 +207,7 @@ def getSysfsValue(device, key):
         fileValue = parseSysfsValue(key, fileValue)
 
     if fileValue == '':
-        printLog(device, 'WARNING: Empty SysFS value: ' + key)
+        logging.debug('GPU[%s]\t: Empty SysFS value: %s', parseDeviceName(device), key)
 
     return fileValue
 
@@ -109,6 +216,7 @@ def parseSysfsValue(key, value):
     """ Parse the sysfs value string
 
     Parameters:
+    key -- [$valuePaths.keys()] Key referencing desired SysFS file
     value -- SysFS value to parse
 
     Some SysFS files aren't a single line/string, so we need to parse it
@@ -117,7 +225,7 @@ def parseSysfsValue(key, value):
     if key == 'id':
         # Strip the 0x prefix
         return value[2:]
-    if key == 'temp':
+    if re.match(r'temp[0-9]+', key):
         # Convert from millidegrees
         return int(value) / 1000
     if key == 'power':
@@ -125,6 +233,14 @@ def parseSysfsValue(key, value):
         # available, it will return "Invalid Argument"
         if value.isdigit():
             return float(value) / 1000 / 1000
+    # ras_reatures has "feature mask: 0x%x" as the first line, so get the bitfield out
+    if key == 'ras_features':
+        return int((value.split('\n')[0]).split(' ')[-1], 16)
+    # The smc_fw_version sysfs file stores the version as a hex value like 0x12345678
+    # but is parsed as int(0x12).int(0x34).int(0x56).int(0x78)
+    if key == 'smc_fw_version':
+        return (str('%02d' % int((value[2:4]), 16)) + '.' + str('%02d' % int((value[4:6]), 16)) + '.' +
+                str('%02d' % int((value[6:8]), 16)) + '.' + str('%02d' % int((value[8:10]), 16)))
 
     return ''
 
@@ -133,7 +249,7 @@ def parseDeviceNumber(deviceNum):
     """ Parse the device number, returning the format of card#
 
     Parameters:
-    deviceNum -- Device number to parse
+    deviceNum -- DRM device number to parse
     """
     return 'card' + str(deviceNum)
 
@@ -142,27 +258,79 @@ def parseDeviceName(deviceName):
     """ Parse the device name, which is of the format card#.
 
     Parameters:
-    deviceName -- Device name to parse
+    deviceName -- DRM device name to parse
     """
     return deviceName[4:]
+
+
+def printErr(device, err):
+    """ Print out an error to the SMI log
+
+    Parameters:
+    device -- DRM device identifier
+    err -- Error string to print
+    """
+    devName = parseDeviceName(device)
+    for line in err.split('\n'):
+        errstr = 'GPU[%s] \t\t: %s' % (devName, line)
+        logging.error(errstr)
+        print(errstr)
+
+
+def formatJson(device, log):
+    """ Print out in JSON format
+
+    Parameters:
+    device -- DRM device identifier
+    log -- String to parse and output into JSON format
+    """
+    global JSON_DATA
+    for line in log.splitlines():
+        # If we got some bad input somehow, quietly ignore it
+        if ':' not in line:
+            return
+        logTuple = line.split(': ')
+        JSON_DATA[device][logTuple[0]] = logTuple[1]
 
 
 def printLog(device, log):
     """ Print out to the SMI log.
 
     Parameters:
-    device -- Device that the log will reference
+    device -- DRM device identifier
     log -- String to print to the log
     """
+    global PRINT_JSON
+    if PRINT_JSON is True:
+        formatJson(device, log)
+        return
+
+    devName = parseDeviceName(device)
     for line in log.split('\n'):
-        print('GPU[', parseDeviceName(device), '] \t\t: ', line, sep='')
+        logstr = 'GPU[%s] \t\t: %s' % (devName, line)
+        logging.debug(logstr)
+        print(logstr)
+
+
+def printLogSpacer():
+    """ A helper function to print out the log spacer
+
+    We use this to prevent unnecessary output when printing out
+    JSON data. If we want JSON, do nothing, otherwise print out
+    the spacer. To keep Python2 compatibility, we don't just use
+    the print(end='') option, so instead we made this helper
+    """
+    global PRINT_JSON
+    if PRINT_JSON:
+        return
+    print(logSpacer)
 
 
 def doesDeviceExist(device):
     """ Check whether the specified device exists in sysfs.
 
     Parameters:
-    device -- Device to check for existence
+    device -- DRM device identifier
     """
     if os.path.exists(os.path.join(drmprefix, device)) == 0:
         return False
@@ -208,9 +376,23 @@ def isDPMAvailable(device):
     """ Check if DPM is available for a specified device.
 
     Parameters:
-    device -- Device to check for DPM availability
+    device -- DRM device identifier
     """
-    if not doesDeviceExist(device) or os.path.isfile(os.path.join(drmprefix, device, 'device', 'power_dpm_state')) == 0:
+    if not doesDeviceExist(device) or not os.path.isfile(getFilePath(device, 'dpm_state')):
+        logging.warning('GPU[%s]\t: DPM is not available', parseDeviceName(device))
+        return False
+    return True
+
+
+def isRasControlAvailable(device):
+    """ Check if RAS control is available for a specified device.
+
+    Parameters:
+    device -- DRM device identifier
+    """
+    path = getFilePath(device, 'ras_ctrl')
+    if not doesDeviceExist(device) or not path or not os.path.isfile(path):
+        logging.warning('GPU[%s]\t: RAS control is not available', parseDeviceName(device))
         return False
     return True
 
@@ -218,10 +400,10 @@ def isDPMAvailable(device):
 def getNumProfileArgs(device):
     """ Get the number of Power Profile fields for a specific device
 
-    This varies per ASIC, so ensure that we get the right number of arguments
-
     Parameters:
-    device -- Device to get the number of Power Profile fields
+    device -- DRM device identifier
+
+    This varies per ASIC, so ensure that we get the right number of arguments
     """
 
     profile = getSysfsValue(device, 'profile')
@@ -233,8 +415,21 @@ def getNumProfileArgs(device):
     # SMU7 has 2 hidden fields for SclkProfileEnable and MclkProfileEnable
     if 'SCLK_UP_HYST' in fields:
         numHiddenFields = 2
+    # If there is a CLOCK_TYPE category, that requires a value as well
+    if 'CLOCK_TYPE(NAME)' in fields:
+        numHiddenFields = 1
     # Subtract 2 to remove NUM and MODE NAME, since they're not valid Profile fields
     return len(fields.split()) - 2 + numHiddenFields
+
+
+def getBus(device):
+    """ Get the PCIe bus information for a specified device
+
+    Parameters:
+    device -- DRM device identifier
+    """
+    bus = os.readlink(os.path.join(drmprefix, device, 'device'))
+    return bus.split('/')[-1]
 
 
 def verifySetProfile(device, profile):
@@ -244,11 +439,11 @@ def verifySetProfile(device, profile):
     the profile being passed in being valid
 
     Parameters:
-    device -- Device to verify Profile variables
+    device -- DRM device identifier
     """
     global RETCODE
     if not isDPMAvailable(device):
-        printLog(device, 'DPM not available - cannot specify profile.')
+        printErr(device, 'Unable to specify profile')
         RETCODE = 1
         return False
 
@@ -256,30 +451,33 @@ def verifySetProfile(device, profile):
     if profile.isdigit():
         maxProfileLevel = getMaxLevel(device, 'profile')
         if maxProfileLevel is None:
-            printLog(device, 'Cannot set profile, unable to obtain max level')
+            printErr(device, 'Unable to set profile')
+            logging.debug('GPU[%s]\t: Unable to get max level when trying to set profile', parseDeviceName(device))
             return False
         if int(profile) > maxProfileLevel:
-            printLog(device, 'Cannot set profile to level ' + str(profile) + ', max level is ' + str(maxProfileLevel))
+            printErr(device, 'Unable to set profile to level' + str(profile))
+            logging.debug('GPU[%s]\t: %d is an invalid level, maximum level is %d', parseDeviceName(device), profile, maxProfileLevel)
             return False
         return True
     # If we get a string, split it into elements to make it a list
     elif isinstance(profile, str):
         if profile == 'reset':
-            printLog(device, 'Reset no longer accepted as a Power Profile')
+            printErr(device, 'Reset no longer accepted as a Power Profile')
             return False
         else:
             profileList = profile.strip().split(' ')
     elif isinstance(profile, collections.Iterable):
         profileList = profile
     else:
-        printLog(device, 'Unsupported profile argument : ' + str(profile))
+        printErr(device, 'Unsupported profile argument : ' + str(profile))
         return False
     numProfileArgs = getNumProfileArgs(device)
     if numProfileArgs == 0:
-        printLog(device, 'Power Profiles not supported')
+        printErr(device, 'Power Profiles not supported')
         return False
     if len(profileList) != numProfileArgs:
-        printLog(device, 'Cannot set profile, must be 1 or ' + str(numProfileArgs) + ' values')
+        printErr(device, 'Unable to set profile')
+        logging.error('GPU[%s]\t: Profile must contain 1 or %d values', parseDeviceName(device), numProfileArgs)
         RETCODE = 1
         return False
 
@@ -293,14 +491,17 @@ def getProfile(device):
     Return either a single digit for a non-CUSTOM profile, or return the CUSTOM profile
 
     Parameters:
-    device -- Device to return the current profile
+    device -- DRM device identifier
     """
     profiles = getSysfsValue(device, 'profile')
-    profile = ''
     custom = ''
     asic = ''
     level = ''
     numArgs = getNumProfileArgs(device)
+    if numArgs == 0:
+        printErr(device, 'Unable to get power profile')
+        logging.debug('GPU[%s]\t: Power Profile not supported (file is empty)', parseDeviceName(device))
+        return None
     for line in profiles.splitlines():
         if re.match(r'.*SCLK_UP_HYST./*', line):
             asic = 'SMU7'
@@ -339,8 +540,8 @@ def writeProfileSysfs(device, value):
     parsing of the data first.
 
     Parameters:
-    device -- Device to write the Power Profile info
-    value -- Value to write to the sysfs file
+    device -- DRM device identifier
+    value -- Value to write to the Profile sysfs file
     """
     if not verifySetProfile(device, value):
         return
@@ -348,10 +549,11 @@ def writeProfileSysfs(device, value):
     # Perf Level must be set to manual for a Power Profile to be specified
     # This is new compared to previous versions of the Power Profile
     setPerfLevel(device, 'manual')
-    profilePath = os.path.join(drmprefix, device, 'device', 'pp_power_profile_mode')
+    profilePath = getFilePath(device, 'profile')
     maxLevel = getMaxLevel(device, 'profile')
     if maxLevel is None:
-        printLog(device, 'Cannot set profile, max level could not be obtained')
+        printErr(device, 'Unable to set profile')
+        logging.debug('GPU[%s]\t: Max profile level could not be obtained', parseDeviceName(device))
         return False
     # If it's a single number, then we're choosing the Power Profile, not setting CUSTOM
     if isinstance(value, str) and len(value) == 1:
@@ -364,7 +566,7 @@ def writeProfileSysfs(device, value):
             # Prepend the Max Level of Profiles since that will always be the CUSTOM profile
             profileString = str(maxLevel) + value
     else:
-        printLog(device, 'Invalid input argument ' + value)
+        printErr(device, 'Invalid input argument ' + value)
         return False
     if writeToSysfs(profilePath, profileString):
         return True
@@ -380,15 +582,16 @@ def writeToSysfs(fsFile, fsValue):
     """
     global RETCODE
     if not os.path.isfile(fsFile):
-        print('Cannot write to sysfs file ' + fsFile + '. File does not exist', sep='')
-        RETCODE = 1
+        print('Unable to write to sysfs file')
+        logging.debug('%s does not exist', fsFile)
         return False
     try:
-        logging.debug('Writing value \'' + fsValue + '\' to file \'' + fsFile + '\'')
+        logging.debug('Writing value \'%s\' to file \'%s\'', fsValue, fsFile)
         with open(fsFile, 'w') as fs:
             fs.write(fsValue + '\n') # Certain sysfs files require \n at the end
     except (IOError, OSError):
-        print('Unable to write to sysfs file ' + fsFile)
+        print('Unable to write to to sysfs file ' + fsFile)
+        logging.warning('IO or OS error')
         RETCODE = 1
         return False
     return True
@@ -398,7 +601,7 @@ def listDevices(showall):
     """ Return a list of GPU devices.
 
     Parameters:
-    showall -- Boolean whether we should show all devices, or just AMD devices
+    showall -- [True|False] Show all devices, not just AMD devices
     """
 
     devicelist = [device for device in os.listdir(drmprefix) if re.match(r'^card\d+$', device) and (isAmdDevice(device) or showall)]
@@ -424,7 +627,7 @@ def getHwmonFromDevice(device):
     """ Return the corresponding HW Monitor for a specified GPU device.
 
     Parameters:
-    device -- Device to return the corresponding HW Monitor
+    device -- DRM device identifier
     """
     drmdev = os.path.realpath(os.path.join(drmprefix, device, 'device'))
     for hwmon in listAmdHwMons():
@@ -434,36 +637,35 @@ def getHwmonFromDevice(device):
 
 
 def getFanSpeed(device):
-    """ Return the fan speed (%) for a specified device.
+    """ Return an tuple with the fan speed (value,%) for a specified device,
+    or (None,None) if either current fan speed or max fan speed cannot be
+    obtained.
 
     Parameters:
-    device -- Device to return the current fan speed
+    device -- DRM device identifier
     """
 
     fanLevel = getSysfsValue(device, 'fan')
     fanMax = getSysfsValue(device, 'fanmax')
     if not fanLevel or not fanMax:
-        return 0
-    return round((float(fanLevel) / float(fanMax)) * 100, 2)
+        return (None, None)
+    return (int(fanLevel), round((float(fanLevel) / float(fanMax)) * 100, 2))
 
 
 def getCurrentClock(device, clock, clocktype):
     """ Return the current clock frequency for a specified device.
 
     Parameters:
-    device -- Device to return the clock frequency
-    clock -- [gpu|mem|pcie] Return the GPU (gpu), GPU Memory (mem) or PCIE (pcie) clock frequency
+    device -- DRM device identifier
+    clock -- [$validClockNames] Clock to return
     clocktype -- [freq|level] Return either the clock frequency (freq) or clock level (level)
     """
     currClk = ''
 
-    if clock == 'gpu':
-        currClocks = getSysfsValue(device, 'sclk')
-    elif clock == 'mem':
-        currClocks = getSysfsValue(device, 'mclk')
-    elif clock == 'pcie':
-        currClocks = getSysfsValue(device, 'pclk')
+    if clock in validClockNames:
+        currClocks = getSysfsValue(device, clock)
     else:
+        logging.error('Invalid clock type %s', clocktype)
         currClocks = None
 
     if not currClocks:
@@ -484,33 +686,66 @@ def getMaxLevel(device, leveltype):
     """ Return the maximum level for a specified device.
 
     Parameters:
-    device -- Device to return the maximum level
-    leveltype -- [gpu|mem|pcie|profile] Return the maximum GPU (gpu), GPU Memory (mem) level,
-                 PCIe level, or the highest numbered Power Profiles
+    device -- DRM device identifier
+    leveltype -- [$validClockNames] Return the maximum desired clock,
+                 or the highest numbered Power Profiles
     """
     global RETCODE
-    levelmap = {'gpu' : 'sclk', 'mem' : 'mclk', 'pcie' : 'pclk', 'profile' : 'profile'}
-    try:
-        key = levelmap[leveltype]
-    except KeyError:
-        printLog(device, 'Invalid level type ' + leveltype)
+    if not leveltype in validClockNames and leveltype != 'profile':
+        printErr(device, 'Unable to get max level')
+        logging.error('Invalid level type %s', leveltype)
         RETCODE = 1
         return None
 
-    levels = getSysfsValue(device, key)
+    levels = getSysfsValue(device, leveltype)
     if not levels:
         return None
     # lstrip since there are leading spaces for this sysfs file, but no others
     if leveltype == 'profile':
-        levels = levels.splitlines()[-1].lstrip(' ')
+        for line in levels.splitlines():
+            if re.match(r'.*CUSTOM.*', line):
+                return int(line.lstrip().split()[0])
     return int(levels.splitlines()[-1][0])
+
+
+def getMemInfo(device, memType):
+    """ Return the specified memory usage for the specified device
+
+    Parameters:
+    device -- DRM device identifier
+    type -- [vram|vis_vram|gtt] Memory type to return
+    """
+    if memType not in validMemTypes:
+        logging.error('Invalid memory type %s', memType)
+        return (None, None)
+    memUsed = getSysfsValue(device, '%s_used' % memType)
+    memTotal = getSysfsValue(device, '%s_total' % memType)
+    if memUsed == None:
+        logging.debug('Unable to get %s_used' % memType)
+    elif memTotal == None:
+        logging.debug('Unable to get %s_total' % memType)
+    return (memUsed, memTotal)
+
+
+def getRasEnablement(device, rasType):
+    """ Return RAS enablement information for the specified device
+
+    Parameters:
+    device -- DRM device identifier
+    rasType -- [$validRasBlocks] RAS counter to display
+    """
+    # The ras/features file is a bit field of supported blocks
+    rasBitfield = getSysfsValue(device, 'ras_features')
+    if rasBitfield is None:
+        return None
+    return ('ENABLED' if rasBitfield & (1 << validRasBlocks[rasType]) else 'DISABLED')
 
 
 def isAmdDevice(device):
     """ Return whether the specified device is an AMD device or not
 
     Parameters:
-    device -- Device to return whether or not it's an AMD device
+    device -- DRM device identifier
     """
     vid = getSysfsValue(device, 'vendor')
     if vid == '0x1002':
@@ -522,15 +757,16 @@ def setPerfLevel(device, level):
     """ Set the Performance Level for a specified device.
 
     Parameters:
-    device -- Device to modify the current Performance Level
+    device -- DRM device identifier
     level -- Performance Level to set
     """
     global RETCODE
     validLevels = ['auto', 'low', 'high', 'manual']
-    perfPath = os.path.join(drmprefix, device, 'device', 'power_dpm_force_performance_level')
+    perfPath = getFilePath(device, 'perf')
 
     if level not in validLevels:
-        print(device, 'Invalid Performance level:' + level)
+        printErr(device, 'Unable to set Performance Level')
+        logging.error('Invalid Performance level: %s', level)
         RETCODE = 1
         return False
     if not os.path.isfile(perfPath):
@@ -543,245 +779,245 @@ def showId(deviceList):
     """ Display the device ID for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to return the device ID (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         printLog(device, 'GPU ID: 0x' + getSysfsValue(device, 'id'))
-    print(logSpacer)
+    printLogSpacer()
 
 
 def showVbiosVersion(deviceList):
     """ Display the VBIOS version for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to return the VBIOS version (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         vbios = getSysfsValue(device, 'vbios')
         if vbios:
             printLog(device, 'VBIOS version: ' + vbios)
         else:
-            printLog(device, 'Cannot get VBIOS version')
-    print(logSpacer)
+            printErr(device, 'Unable to get VBIOS version')
+    printLogSpacer()
 
 
-def showCurrentGpuClocks(deviceList):
-    """ Display the current GPU clock frequencies for a list of devices.
+def showCurrentClock(deviceList, clocktype):
+    """ Display the current clocktype frequency for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to return the current clock frequencies (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
+    clocktype -- Specific type of clock to return
     """
     global RETCODE
-    print(logSpacer)
+    if clocktype not in validClockNames:
+        print('Unable to display ' + clocktype)
+        logging.error('GPU[%s]\t: Invalid clock type %s', clocktype)
+        RETCODE = 1
+        return
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot display GPU clocks')
+            printErr(device, 'Unable to display ' + clocktype)
             continue
-        gpuclk = getCurrentClock(device, 'gpu', 'freq')
-        gpulevel = getCurrentClock(device, 'gpu', 'level')
+        if not getFilePath(device, clocktype):
+            # If the clock file doesn't exist, don't print it out.
+            # It may not be an error if the HW doesn't support it,
+            # like fclk on Vega10 for example
+            # TODO: Add a debug-level log explaining a lack of file
+            continue
+        clk = getCurrentClock(device, clocktype, 'freq')
+        if clk:
+            level = getCurrentClock(device, clocktype, 'level')
 
-        if gpuclk == '':
-            printLog(device, 'Unable to determine current GPU clocks. Check dmesg or GPU temperature')
-            RETCODE = 1
+        if not clk or not level:
+            printErr(device, 'Unable to display ' + clocktype)
+            logging.debug('GPU[%s]\t: Clock file %s is empty. ASIC may not support it', parseDeviceName(device), clocktype)
             return
 
-        printLog(device, 'GPU Clock Level: ' + str(gpulevel) + ' (' + str(gpuclk) + ')')
-    print(logSpacer)
+        printLog(device, clocktype + ' Clock Level: ' + str(level) + ' (' + str(clk) + ')')
 
 
 def showCurrentClocks(deviceList):
-    """ Display the current GPU and GPU Memory clock frequencies for a list of devices.
+    """ Display all clocks for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to return the current clock frequencies (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
     global RETCODE
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot display clocks')
+            printErr(device, 'Unable to display clocks')
             continue
-        gpuclk = getCurrentClock(device, 'gpu', 'freq')
-        gpulevel = getCurrentClock(device, 'gpu', 'level')
-        memclk = getCurrentClock(device, 'mem', 'freq')
-        memlevel = getCurrentClock(device, 'mem', 'level')
-        pcieclk = getCurrentClock(device, 'pcie', 'freq')
-        pcielevel = getCurrentClock(device, 'pcie', 'level')
-
-        if gpuclk == '':
-            printLog(device, 'Unable to determine current clocks. Check dmesg or GPU temperature')
-            RETCODE = 1
-            return
-
-        printLog(device, 'GPU Clock Level: ' + str(gpulevel) + ' (' + str(gpuclk) + ')')
-        printLog(device, 'GPU Memory Clock Level: ' + str(memlevel) + ' (' + str(memclk) + ')')
-        printLog(device, 'PCIE Clock Level: ' + str(pcielevel) + ' (' + str(pcieclk) + ')')
-    print(logSpacer)
+        for clk in validClockNames:
+            showCurrentClock([device], clk)
+        printLogSpacer()
 
 
 def showCurrentTemps(deviceList):
     """ Display the current temperature for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to return the current temperature (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
 
-    print(logSpacer)
+    printLogSpacer()
+    tempList = []
+    tempLabelList = []
     for device in deviceList:
-        temp = getSysfsValue(device, 'temp')
-        if not temp:
-            printLog(device, 'Unable to display temperature')
-            continue
-        printLog(device, 'Temperature: ' + str(temp) + 'c')
-    print(logSpacer)
+        # We currently have temp1/2/3, so use range(1,4)
+        for x in range(1, 4):
+            temp = getSysfsValue(device, 'temp%d' % x)
+            tempLabel = getSysfsValue(device, 'temp%d_label' % x)
+            if temp and tempLabel:
+                printLog(device, 'Temperature (%s): %s c' % (tempLabel, temp))
+            elif temp:
+                printLog(device, 'Temperature (Sensor #%d): %s c' % (x, temp))
+    printLogSpacer()
 
 
 def showCurrentFans(deviceList):
     """ Display the current fan speed for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to return the current fan speed (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
-        fanlevel = getSysfsValue(device, 'fan')
-        fanspeed = getFanSpeed(device)
-        if not fanspeed or not fanlevel:
-            printLog(device, 'Unable to determine current fan speed')
+        (fanLevel, fanSpeed) = getFanSpeed(device)
+        if not fanLevel or not fanSpeed:
+            printErr(device, 'Unable to display current fan speed')
             continue
-        printLog(device, 'Fan Level: ' + str(fanlevel) + ' (' + str(fanspeed) + ')%')
-    print(logSpacer)
+        printLog(device, 'Fan Level: %d (%d%%)' % (fanLevel, fanSpeed))
+    printLogSpacer()
 
 
 def showClocks(deviceList):
     """ Display current GPU and GPU Memory clock frequencies for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to display current clock frequencies (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
-        devpath = os.path.join(drmprefix, device, 'device')
-        sclkPath = os.path.join(devpath, 'pp_dpm_sclk')
-        mclkPath = os.path.join(devpath, 'pp_dpm_mclk')
-        pclkPath = os.path.join(devpath, 'pp_dpm_pcie')
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot display clocks')
+            printErr(device, 'Unable to display clocks')
             continue
-        if not os.path.isfile(sclkPath) or not os.path.isfile(mclkPath):
-            continue
-        with open(sclkPath, 'r') as sclk:
-            sclkLog = 'Supported GPU clock frequencies on GPU' + parseDeviceName(device) + '\n' + sclk.read()
-        with open(mclkPath, 'r') as mclk:
-            mclkLog = 'Supported GPU Memory clock frequencies on GPU' + parseDeviceName(device) + '\n' + mclk.read()
-        with open(pclkPath, 'r') as pclk:
-            pclkLog = 'Supported PCIE clock frequencies on GPU' + parseDeviceName(device) + '\n' + pclk.read()
-        printLog(device, sclkLog)
-        printLog(device, mclkLog)
-        printLog(device, pclkLog)
-    print(logSpacer)
+        for clk in validClockNames:
+            clkPath = getFilePath(device, clk)
+            if not clkPath or not os.path.isfile(clkPath):
+                continue
+            with open(clkPath, 'r') as clkFile:
+                clkLog = 'Supported ' + clk + ' frequencies on GPU' + parseDeviceName(device) + '\n' + clkFile.read()
+            printLog(device, clkLog)
+    printLogSpacer()
 
 
 def showPowerPlayTable(deviceList):
     """ Display current GPU and GPU Memory clock frequencies and voltages for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to display current clock frequencies and voltages (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot display voltages')
+            printErr(device, 'Unable to display voltages')
             continue
         table = getSysfsValue(device, 'clk_voltage')
         if not table:
-            printLog(device, 'Cannot display voltage, clk_voltage is empty')
+            printErr(device, 'Unable to display voltage')
+            logging.debug('GPU[%s]\t: clk_voltage is empty', parseDeviceName(device))
             continue
         printLog(device, table)
-    print(logSpacer)
+    printLogSpacer()
 
 
 def showPerformanceLevel(deviceList):
     """ Display current Performance Level for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to display current Performance Level (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         level = getSysfsValue(device, 'perf')
         if not level:
-            printLog(device, 'Cannot get Performance Level: Performance Level not supported')
+            printErr(device, 'Unable to get Performance Level')
+            logging.debug('GPU[%s]\t: Performance Level not supported (file is empty)', parseDeviceName(device))
         else:
             printLog(device, 'Current Performance Level: ' + level)
-    print(logSpacer)
+    printLogSpacer()
 
 
 def showOverDrive(deviceList, odtype):
     """ Display current OverDrive level for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to display current OverDrive values (can be a single-item list)
-    odtype -- Which OverDrive to display (gpu|mem)
+    deviceList -- List of DRM devices (can be a single-item list)
+    odtype -- [sclk|mclk] OverDrive type
     """
 
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
-        if odtype == 'gpu':
+        if odtype == 'sclk':
             od = getSysfsValue(device, 'sclk_od')
             odStr = 'GPU'
-        elif odtype == 'mem':
+        elif odtype == 'mclk':
             od = getSysfsValue(device, 'mclk_od')
             odStr = 'GPU Memory'
         if not od or int(od) < 0:
-            printLog(device, 'Cannot get ' + odStr + ' OverDrive value: OverDrive not supported')
+            printErr(device, 'Unable to get ' + odStr + ' OverDrive value')
+            logging.debug('GPU[%s]\t: %s OverDrive not supported', odStr)
         else:
             printLog(device, 'Current ' + odStr + ' OverDrive value: ' + str(od) + '%')
-    print(logSpacer)
+    printLogSpacer()
 
 
 def showProfile(deviceList):
     """ Display available Power Profiles for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to display available Power Profile attributes (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Power Profiles not supported')
+            printErr(device, 'Power Profiles not supported')
             continue
         profile = getSysfsValue(device, 'profile')
         if not profile:
-            printLog(device, 'Unable to get Power Profiles')
+            printErr(device, 'Unable to get Power Profile')
+            logging.debug('GPU[%s]\t: Power Profile not supported (file is empty)', parseDeviceName(device))
             continue
         if len(profile) > 1:
             printLog(device, '\n' + profile)
         else:
-            printLog(device, 'Invalid return value from Power Profile SysFS file')
-    print(logSpacer)
+            printErr(device, 'Unable to get Power Profile')
+            logging.debug('GPU[%s]\t: Invalid return value from Power Profile SysFS file', parseDeviceName(device))
+    printLogSpacer()
 
 
 def showPower(deviceList):
     """ Display current Average Graphics Package Power Consumption for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to display current Average Graphics Package Power Consumption (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     try:
         getPid("atitool")
-        print('WARNING: Please terminate ATItool to use this functionality')
+        logging.error('Please terminate ATItool to use this functionality')
     except subprocess.CalledProcessError:
         for device in deviceList:
             power = getSysfsValue(device, 'power')
             if not power:
-                printLog(device, 'Cannot get Average Graphics Package Power Consumption: Average GPU Power not supported')
+                printErr(device, 'Unable to get Average Graphics Package Power Consumption')
+                logging.debug('GPU[%s]\t: Average GPU Power not supported', parseDeviceName(device))
             else:
                 printLog(device, 'Average Graphics Package Power: ' + str(power) + 'W')
-    print(logSpacer)
+    printLogSpacer()
 
 
 def showMaxPower(deviceList):
@@ -789,50 +1025,48 @@ def showMaxPower(deviceList):
     before it begins throttling performance.
 
     Parameters:
-    deviceList -- List of devices to display maximum Graphics Package Power Consumption (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
-        hwmon = getHwmonFromDevice(device)
-        if not hwmon:
-            printLog(device, 'No corresponding HW Monitor found')
-            continue
         power_cap = getSysfsValue(device, 'power_cap')
         if not power_cap:
-            printLog(device, 'Cannot get maximum Graphics Package Power: Max GPU Power reading not supported')
+            printErr(device, 'Unable to get maximum Graphics Package Power')
         else:
             power_cap = str(int(getSysfsValue(device, 'power_cap')) / 1000000)
             printLog(device, 'Max Graphics Package Power: ' + power_cap + 'W')
-    print(logSpacer)
+    printLogSpacer()
 
 
 def showGpuUse(deviceList):
     """ Display GPU use for a list of devices.
 
     Parameters:
-    deviceList -- List of all devices
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         use = getSysfsValue(device, 'use')
         if use == None:
-            printLog(device, 'Cannot get GPU use.')
+            printErr(device, 'Unable to get GPU use.')
+            logging.debug('GPU[%s]\t: GPU usage not supported (file is empty)', parseDeviceName(device))
         else:
             printLog(device, 'Current GPU use: ' + use + '%')
-    print(logSpacer)
+    printLogSpacer()
 
 
 def showPcieBw(deviceList):
     """ Display estimated PCIe bandwidth usage for a list of devices.
 
     Parameters:
-    deviceList -- List of all devices
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         fsvals = getSysfsValue(device, 'pcie_bw')
         if fsvals == None:
-            printLog(device, 'Cannot get PCIe bandwidth')
+            printErr(device, 'Unable to get PCIe bandwidth')
+            logging.debug('GPU[%s]\t: PCIe bandwidth not supported (file is empty)', parseDeviceName(device))
         else:
             # The sysfs file returns 3 integers: bytes-received, bytes-sent, maxsize
             # Multiply the number of packets by the maxsize to estimate the PCIe usage
@@ -846,39 +1080,142 @@ def showPcieBw(deviceList):
             bwstr = '%.3f' % bw
 
             printLog(device, 'Estimated maximum PCIe bandwidth over the last second: ' + bwstr + ' MB/s')
-    print(logSpacer)
+    printLogSpacer()
+
+
+def showPcieReplayCount(deviceList):
+    """ Display number of PCIe replays for a list of devices.
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    """
+    printLogSpacer()
+    for device in deviceList:
+        count = getSysfsValue(device, 'replay_count')
+        if count == None:
+            printErr(device, 'Unable to get PCIe replay count')
+            logging.debug('GPU[%s]\t: File is empty. Likely a kernel bug', parseDeviceName(device))
+        else:
+            printLog(device, 'PCIe Replay Count: %s' % count)
+    printLogSpacer()
+
+
+def showMemInfo(deviceList, memType):
+    """ Display Memory information for a list of devices
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    memType -- [$validMemTypes] Type of memory information to display
+    """
+    # Python will pass in a list of values as a single-value list.
+    # If we get 'all' as the string, just set the list to all supported types
+    # Otherwise, split the single-item list by space, then split each element
+    # up to process it below
+    if 'all' in memType:
+        returnTypes = validMemTypes
+    else:
+        returnTypes = memType
+
+    printLogSpacer()
+    for device in deviceList:
+        for mem in returnTypes:
+            memInfo = getMemInfo(device, mem)
+            if memInfo[0]  == None or memInfo[1] == None:
+                printErr(device, 'Unable to get %s memory usage information' % mem)
+            else:
+                printLog(device, '%s ::\ttotal: %s B   \tused: %s B' % (mem, memInfo[1], memInfo[0]))
+    printLogSpacer()
+
+
+def showVoltage(deviceList):
+    """ Display the current voltage (in millivolts) for a list of devices.
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    """
+
+    printLogSpacer()
+    for device in deviceList:
+        voltage = getSysfsValue(device, 'voltage')
+        if not voltage:
+            printErr(device, 'Unable to display voltage')
+            continue
+        printLog(device, 'Voltage: %s mV' % str(voltage))
+    printLogSpacer()
+
+
+def showVersion(deviceList, component):
+    """ Show the software version for the specified component
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    component - Component (currently only driver)
+    """
+    if component not in validVersionComponents:
+        printLog(device, 'Unable to display version information for unsupported component %s' % component)
+        return
+    if component is 'driver':
+        # Only 1 version, so report it for GPU 0
+        driver = getSysfsValue(None, 'driver')
+        if driver is None:
+            driver = os.uname()[2]
+        print('%s version: %s' % (component.capitalize(), driver))
 
 
 def showAllConciseHw(deviceList):
     """ Display critical Hardware info for all devices in a concise format.
 
     Parameters:
-    deviceList -- List of all devices
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
-    print(' GPU  DID    ECC        VBIOS')
+    printLogSpacer()
+    header = ['GPU', 'DID', 'GFX RAS', 'SDMA RAS', 'UMC RAS', 'VBIOS', 'BUS']
+    head_widths = [len(head)+2 for head in header]
+    values = {}
     for device in deviceList:
         gpuid = getSysfsValue(device, 'id')
 
-        # To support later
-        ecc = 'N/A'
-
+        gfxRas = getRasEnablement(device, 'gfx')
+        sdmaRas = getRasEnablement(device, 'sdma')
+        umcRas = getRasEnablement(device, 'umc')
+        gfxRas = 'N/A' if gfxRas is None else gfxRas
+        sdmaRas = 'N/A' if sdmaRas is None else sdmaRas
+        umcRas = 'N/A' if umcRas is None else umcRas
         vbios = getSysfsValue(device, 'vbios')
+        bus = getBus(device)
 
-        print("  %-4s%-7s%-6s%-17s" % (device[4:], gpuid, ecc, vbios))
+        values[device] = [device[4:], gpuid, gfxRas, sdmaRas, umcRas, vbios, bus]
+    val_widths = {}
+    for device in deviceList:
+        val_widths[device] = [len(val)+2 for val in values[device]]
+    max_widths = head_widths
+    for device in deviceList:
+        for col in range(len(val_widths[device])):
+            max_widths[col] = max(max_widths[col], val_widths[device][col])
+    print("".join(word.ljust(max_widths[col]) for col,word in zip(range(len(max_widths)),header)))
+    for device in deviceList:
+        print("".join(word.ljust(max_widths[col]) for col,word in zip(range(len(max_widths)),values[device])))
 
 
 def showAllConcise(deviceList):
     """ Display critical info for all devices in a concise format.
 
     Parameters:
-    deviceList -- List of all devices
+    deviceList -- List of DRM devices (can be a single-item list)
     """
-    print(logSpacer)
-    print('GPU   Temp   AvgPwr   SCLK    MCLK    PCLK           Fan     Perf    PwrCap   SCLK OD   MCLK OD  GPU%')
+    printLogSpacer()
+    header = ['GPU', 'Temp', 'AvgPwr', 'SCLK', 'MCLK', 'Fan', 'Perf', 'PwrCap', 'VRAM%', 'GPU%']
+    head_widths = [len(head)+2 for head in header]
+    values = {}
     for device in deviceList:
-
-        temp = getSysfsValue(device, 'temp')
+        # Default to temp1, it's always there
+        temp = getSysfsValue(device, 'temp1')
+        for x in range(1, 4):
+            # But report 'edge' if the ASIC supports it
+            tempLabel = getSysfsValue(device, 'temp%d_label' % x)
+            if tempLabel == 'edge':
+                temp = getSysfsValue(device, 'temp%d' % x)
+                break
         if not temp:
             temp = 'N/A'
         else:
@@ -890,19 +1227,15 @@ def showAllConcise(deviceList):
         else:
             power = str(power) + 'W'
 
-        sclk = getCurrentClock(device, 'gpu', 'freq')
+        sclk = getCurrentClock(device, 'sclk', 'freq')
         if not sclk:
             sclk = 'N/A'
 
-        mclk = getCurrentClock(device, 'mem', 'freq')
+        mclk = getCurrentClock(device, 'mclk', 'freq')
         if not mclk:
             mclk = 'N/A'
 
-        pclk = getCurrentClock(device, 'pcie', 'freq')
-        if not pclk:
-            pclk = 'N/A'
-
-        fan = str(getFanSpeed(device))
+        fan = str(getFanSpeed(device)[1])
         if not fan:
             fan = 'N/A'
         else:
@@ -918,50 +1251,117 @@ def showAllConcise(deviceList):
         else:
             power_cap = str(int(power_cap)/1000000) + 'W'
 
-        sclk_od = getSysfsValue(device, 'sclk_od')
-        if not sclk_od or sclk_od == '-1':
-            sclk_od = 'N/A'
+        memInfo = getMemInfo(device, 'vram')
+        if memInfo[0]  == None or memInfo[1] == None:
+            mem_use = 'N/A'
         else:
-            sclk_od = sclk_od + '%'
+            mem_use = '% 3.0f%%' % (100*(float(memInfo[0])/float(memInfo[1])))
 
-        mclk_od = getSysfsValue(device, 'mclk_od')
-        if not mclk_od or mclk_od == '-1':
-            mclk_od = 'N/A'
+        gpu_use = getSysfsValue(device, 'use')
+        if gpu_use == None:
+            gpu_use = 'N/A'
         else:
-            mclk_od = mclk_od + '%'
+            gpu_use = gpu_use + '%'
 
-        use = getSysfsValue(device, 'use')
-        if use == None:
-            use = 'N/A'
-        else:
-            use = use + '%'
+        values[device] = [device[4:], temp, power, sclk, mclk, fan, perf, power_cap, mem_use, gpu_use]
+    val_widths = {}
+    for device in deviceList:
+        val_widths[device] = [len(val)+2 for val in values[device]]
+    max_widths = head_widths
+    for device in deviceList:
+        for col in range(len(val_widths[device])):
+            max_widths[col] = max(max_widths[col], val_widths[device][col])
+    print("".join(word.ljust(max_widths[col]) for col,word in zip(range(len(max_widths)),header)))
+    for device in deviceList:
+        print("".join(word.ljust(max_widths[col]) for col,word in zip(range(len(max_widths)),values[device])))
+    printLogSpacer()
 
-        print("%-6s%-7s%-9s%-8s%-8s%-15s%-8s%-8s%-9s%-10s%-9s%-9s" % (device[4:], temp, power, sclk, mclk, pclk, fan, perf, power_cap, sclk_od, mclk_od, use))
-    print(logSpacer)
 
+def showRasInfo(deviceList, rasType):
+    """ Show the requested RAS information for a list of devices
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    rasType -- [$validRasBlocks] RAS counter to display (all if left empty)
+    """
+    if 'all' in rasType:
+        returnTypes = validRasBlocks.keys()
+    else:
+        returnTypes = rasType
+
+    printLogSpacer()
+    for device in deviceList:
+        for ras in returnTypes:
+            if ras not in validRasBlocks.keys():
+                print('Unable to get %s RAS information' % rasType)
+                logging.debug('Invalid RAS block %s' % rasType)
+                continue
+            rasEnabled = getRasEnablement(device, ras)
+            if rasEnabled is None:
+                printErr(device, 'Unable to get information for block %s' % ras)
+                logging.debug('GPU[%s]\t: RAS not supported for block %s', parseDeviceName(device), rasType)
+            else:
+                printLog(device, 'Block %s is: %s' % (ras, rasEnabled))
+                if rasEnabled == 'ENABLED':
+                    # Now print the error count
+                    printLog(device, getSysfsValue(device, 'ras_%s' % ras))
+    printLogSpacer()
+
+def showFwInfo(deviceList, fwType):
+    """ Show the requested FW information for a list of devices
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    fwType -- [$validFwBlocks] FW block version to display (all if left empty)
+    """
+    if not fwType or 'all' in fwType:
+        returnTypes = sorted(validFwBlocks)
+    else:
+        returnTypes = fwType
+    printLogSpacer()
+    for device in deviceList:
+        for block in returnTypes:
+            fwLogName = block.replace('_', ' ').upper()
+            blockFile = '%s_fw_version' % block
+            version = getSysfsValue(device, blockFile)
+            if version:
+                if valuePaths[blockFile]['needsparse']:
+                    printLog(device, '%s firmware version:  \t%s' % (fwLogName,
+                             getSysfsValue(device, blockFile)))
+                else:
+                    # PSP, UVD, VCE and VCN report their FW in hex
+                    if block in ['ta_ras', 'ta_xgmi', 'uvd', 'vce', 'vcn']:
+                        printLog(device, '%s firmware version:  \t%s' % (fwLogName,
+                                 getSysfsValue(device, blockFile)))
+                    else:
+                        printLog(device, '%s firmware version:  \t%i' % (fwLogName,
+                                 int(getSysfsValue(device, blockFile), 16)))
+            else:
+                print('Unable to get %s_fw_version sysfs file.' % block)
+    printLogSpacer()
 
 def setPerformanceLevel(deviceList, level):
     """ Set the Performance Level for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to set the current Performance Level (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     level -- Specific Performance Level to set
     """
-    print(logSpacer)
+    printLogSpacer()
     for device in deviceList:
         if setPerfLevel(device, level):
             printLog(device, 'Successfully set current Performance Level to ' + level)
         else:
-            printLog(device, 'Unable to set current Performance Level to ' + level)
-    print(logSpacer)
+            printErr(device, 'Unable to set current Performance Level to ' + level)
+    printLogSpacer()
 
 
 def setClocks(deviceList, clktype, clk):
     """ Set clock frequency level for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to set the clock frequency (can be a single-item list)
-    clktype -- [gpu|mem|pcie] Set the GPU (gpu), GPU Memory (mem), or PCIE clock frequency level
+    deviceList -- List of DRM devices (can be a single-item list)
+    clktype -- [validClockNames] Clock type to set
     clk -- Clock frequency level to set
     """
     global RETCODE
@@ -974,23 +1374,18 @@ def setClocks(deviceList, clktype, clk):
     try:
         int(check_value)
     except ValueError:
-        print('Cannot set Clock level to value', value, ', non-integer characters are present!')
+        print('Unable to set Clock level')
+        logging.error('Non-integer characters are present in value %s', value)
         RETCODE = 1
         return
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot set clocks')
+            printErr(device, 'Unable to set clock level')
             RETCODE = 1
             continue
-        devpath = os.path.join(drmprefix, device, 'device')
-        if clktype == 'gpu':
-            clkFile = os.path.join(devpath, 'pp_dpm_sclk')
-        elif clktype == 'mem':
-            clkFile = os.path.join(devpath, 'pp_dpm_mclk')
-        elif clktype == 'pcie':
-            clkFile = os.path.join(devpath, 'pp_dpm_pcie')
-        else:
-            printLog(device, 'Invalid clock type ' + clktype)
+        if clktype not in validClockNames:
+            printErr(device, 'Unable to set clock level')
+            logging.error('Invalid clock type %s', clktype)
             RETCODE = 1
             return
 
@@ -998,24 +1393,23 @@ def setClocks(deviceList, clktype, clk):
         # But 0 is a max level option, so use "is None" instead of "not maxLevel"
         maxLevel = getMaxLevel(device, clktype)
         if maxLevel is None:
-            printLog(device, 'Unable to set clock for type ' + clktype + ', Sysfs file is empty')
+            printErr(device, 'Unable to set clock level')
+            logging.warning('GPU[%s]\t: Unable to get max level for clock type %s', parseDeviceName(device), clktype)
             RETCODE = 1
             continue
         # GPU clocks can be set to multiple levels at the same time (of the format
         # 4 5 6 for levels 4, 5 and 6). Don't compare against the max level for gpu
         # clocks in this case
         if any(int(item) > getMaxLevel(device, clktype) for item in clk):
-            printLog(device, 'Unable to set clock to unsupported Level - Max Level is ' + str(getMaxLevel(device, clktype)))
+            printErr(device, 'Unable to set clock level')
+            logging.error('GPU[%s]\t: Max clock level is %d', parseDeviceName(device), getMaxLevel(device, clktype))
             RETCODE = 1
             continue
         setPerfLevel(device, 'manual')
-        if writeToSysfs(clkFile, value):
-            if clktype == 'gpu':
-                printLog(device, 'Successfully set GPU Clock frequency mask to Level ' + value)
-            else:
-                printLog(device, 'Successfully set GPU Memory Clock frequency mask to Level ' + value)
+        if writeToSysfs(getFilePath(device, clktype), value):
+            printLog(device, 'Successfully set ' + clktype + ' frequency mask to Level ' + value)
         else:
-            printLog(device, 'Unable to set ' + clktype + ' clock to Level ' + value)
+            printErr(device, 'Unable to set ' + clktype + ' clock to Level ' + value)
             RETCODE = 1
 
 
@@ -1023,8 +1417,8 @@ def setPowerPlayTableLevel(deviceList, clktype, levelList, autoRespond):
     """ Set clock frequency and voltage for a level in the PowerPlay table for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to set the clock frequency (can be a single-item list)
-    clktype -- [gpu|mem] Set the GPU (gpu) or GPU Memory (mem) clock frequency level
+    deviceList -- List of DRM devices (can be a single-item list)
+    clktype -- [sclk|mclk] Clock type to set
     levelList -- Clock frequency level to set
     autoRespond -- Response to automatically provide for all prompts
     """
@@ -1037,40 +1431,42 @@ def setPowerPlayTableLevel(deviceList, clktype, levelList, autoRespond):
     try:
         all(int(item) for item in levelList)
     except ValueError:
-        print('Cannot set PowerPlay table level to ', levelList, ', non-integer characters are present!')
+        print('Unable to set PowerPlay table level')
+        logging.error('Non-integer characters are present in %s', levelList)
         RETCODE = 1
         return
-    if clktype == 'gpu':
+    if clktype == 'sclk':
         value = 's ' + value
     else:
         value = 'm ' + value
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not enabled - Cannot set voltages')
+            printErr(device, 'Unable to set voltages')
             RETCODE = 1
             continue
-        devpath = os.path.join(drmprefix, device, 'device')
-        clkFile = os.path.join(devpath, 'pp_od_clk_voltage')
+        clkFile = getFilePath(device, 'clk_voltage')
 
         confirmOutOfSpecWarning(autoRespond)
 
         maxLevel = getMaxLevel(device, clktype)
         if maxLevel is None:
-            printLog(device, 'Unable to set clock, cannot obtain maximum level')
+            printErr(device, 'Unable to set clock level')
+            logging.warning('GPU[%s]\t: Unable to get maximum %s level', parseDeviceName(device), clktype)
             RETCODE = 1
             continue
         if int(levelList[0]) > maxLevel:
-            printLog(device, 'Unable to set clock to unsupported Level - Max Level is ' + str(getMaxLevel(device, clktype)))
+            printErr(device, 'Unable to set clock level')
+            logging.error('GPU[%s]\t: %s is greater than maximum level %s ', parseDeviceName(device), levelList[0], getMaxLevel(device, clktype))
             RETCODE = 1
             continue
         setPerfLevel(device, 'manual')
         if writeToSysfs(clkFile, value) and writeToSysfs(clkFile, 'c'):
-            if clktype == 'gpu':
+            if clktype == 'sclk':
                 printLog(device, 'Successfully set GPU Clock frequency mask to Level ' + value)
             else:
                 printLog(device, 'Successfully set GPU Memory Clock frequency mask to Level ' + value)
         else:
-            printLog(device, 'Unable to set ' + clktype + ' clock to Level ' + value)
+            printErr(device, 'Unable to set ' + clktype + ' clock to Level ' + value)
             RETCODE = 1
 
 
@@ -1078,50 +1474,54 @@ def setClockOverDrive(deviceList, clktype, value, autoRespond):
     """ Set clock speed to OverDrive for a list of devices
 
     Parameters:
-    deviceList -- List of devices to set to OverDrive
-    type -- Clock type to set to OverDrive (currently only GPU and GPU Memory supported)
-    value -- Percentage amount to set for OverDrive (0-20)
+    deviceList -- List of DRM devices (can be a single-item list)
+    type -- [sclk|mclk] Clock type to set
+    value -- [0-20] OverDrive percentage
     autoRespond -- Response to automatically provide for all prompts
     """
     global RETCODE
     try:
         int(value)
     except ValueError:
-        print('Cannot set OverDrive to value', value, ', it is not an integer!')
+        print('Unable to set OverDrive level')
+        logging.error('%s it is not an integer', value)
         RETCODE = 1
         return
+    logging.error('NOTE: GPU and MEM Overdrive have been deprecated in the kernel. Use --setslevel/--setmlevel instead')
     confirmOutOfSpecWarning(autoRespond)
 
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot set OverDrive')
+            printErr(device, 'Unable to set OverDrive')
             continue
-        devpath = os.path.join(drmprefix, device, 'device')
-        if clktype == 'gpu':
-            odPath = os.path.join(devpath, 'pp_sclk_od')
+        if clktype == 'sclk':
+            odPath = getFilePath(device, 'sclk_od')
             odStr = 'GPU'
-        elif clktype == 'mem':
-            odPath = os.path.join(devpath, 'pp_mclk_od')
+        elif clktype == 'mclk':
+            odPath = getFilePath(device, 'mclk_od')
             odStr = 'GPU Memory'
         else:
-            printLog(device, 'Unsupported clock type ' + clktype + ' - Cannot set OverDrive')
+            printErr(device, 'Unable to set OverDrive')
+            logging.error('Unsupported clock type %s', clktype)
             RETCODE = 1
             continue
 
         if int(value) < 0:
-            printLog(device, 'Unable to set OverDrive less than 0%')
+            printErr(device, 'Unable to set OverDrive')
+            logging.debug('Overdrive cannot be less than 0%')
             RETCODE = 1
             return
 
         if int(value) > 20:
-            printLog(device, 'Unable to set OverDrive greater than 20%. Changing to 20')
+            printLog(device, 'Setting OverDrive to 20%')
+            logging.debug('OverDrive cannot be set to a value greater than 20%')
             value = '20'
 
         if writeToSysfs(odPath, value):
             printLog(device, 'Successfully set ' + odStr + ' OverDrive to ' + value + '%')
             setClocks([device], clktype, [getMaxLevel(device, clktype)])
         else:
-            printLog(device, 'Unable to set OverDrive to ' + value + '%')
+            printErr(device, 'Unable to set OverDrive to ' + value + '%')
 
 def setPowerOverDrive(deviceList, value, autoRespond):
     """ Use Power OverDrive to change the the maximum power available power
@@ -1129,7 +1529,7 @@ def setPowerOverDrive(deviceList, value, autoRespond):
     VBIOS is configured to allow this card to use in OverDrive mode.
 
     Parameters:
-    deviceList -- List of devices to set to OverDrive
+    deviceList -- List of DRM devices (can be a single-item list)
     value -- New maximum power to assign to the target device, in Watts
     autoRespond -- Response to automatically provide for all prompts
     """
@@ -1137,7 +1537,8 @@ def setPowerOverDrive(deviceList, value, autoRespond):
     try:
         int(value)
     except ValueError:
-        print('Cannot set Power OverDrive to value ', value, ', it is not an integer!')
+        print('Unable to set Power OverDrive')
+        logging.error('%s it is not an integer', value)
         RETCODE = 1
         return
 
@@ -1150,25 +1551,23 @@ def setPowerOverDrive(deviceList, value, autoRespond):
 
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot set Power OverDrive')
+            printErr(device, 'Unable to set Power OverDrive')
             continue
-        hwmon = getHwmonFromDevice(device)
-        if not hwmon:
-            printLog(device, 'No corresponding HW Monitor found')
-            continue
-        power_cap_path = os.path.join(hwmon, 'power1_cap')
+        power_cap_path = getFilePath(device, 'power_cap')
 
         # Avoid early unnecessary conversions
         max_power_cap = int(getSysfsValue(device, 'power_cap_max'))
         min_power_cap = int(getSysfsValue(device, 'power_cap_min'))
 
         if value < min_power_cap:
-            printLog(device, 'Unable to set Power OverDrive to less than ' + str(min_power_cap / 1000000) + 'W')
+            printErr(device, 'Unable to set Power OverDrive')
+            logging.error('GPU[%s]\t: Value cannot be less than %dW ', parseDeviceName(device), min_power_cap / 1000000)
             RETCODE = 1
             return
 
         if value > max_power_cap:
-            printLog(device, 'Unable to set Power OverDrive to more than ' + str(max_power_cap / 1000000) + 'W')
+            printErr(device, 'Unable to set Power OverDrive')
+            logging.error('GPU[%s]\t: Value cannot be greater than %dW ', parseDeviceName(name), max_power_cap / 1000000)
             RETCODE = 1
             return;
 
@@ -1179,15 +1578,15 @@ def setPowerOverDrive(deviceList, value, autoRespond):
                 printLog(device, 'Successfully reset Power OverDrive')
         else:
             if value != 0:
-                printLog(device, 'Unable to set Power OverDrive to ' + strValue + 'W')
+                printErr(device, 'Unable to set Power OverDrive to ' + strValue + 'W')
             else:
-                printLog(device, 'Unable to reset Power OverDrive to default')
+                printErr(device, 'Unable to reset Power OverDrive to default')
 
 def resetPowerOverDrive(deviceList, autoRespond):
     """ Reset Power OverDrive to the default power limit that comes with the GPU
 
     Parameters:
-    deviceList -- List of devices on which to reset the power cap
+    deviceList -- List of DRM devices (can be a single-item list)
     """
     setPowerOverDrive(deviceList, 0, autoRespond)
 
@@ -1195,103 +1594,102 @@ def resetFans(deviceList):
     """ Reset fans to driver control for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to set the fan speed (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot reset fan speed')
+            printErr(device, 'Unable to reset fan speed')
             continue
-        hwmon = getHwmonFromDevice(device)
-        if not hwmon:
-            printLog(device, 'No corresponding HW Monitor found')
-            continue
-        fanpath = os.path.join(hwmon, 'pwm1_enable')
+        fanpath = getFilePath(device, 'fanmode')
         if writeToSysfs(fanpath, '2'):
             printLog(device, 'Successfully reset fan speed to driver control')
         else:
-            printLog(device, 'Unable to reset fan speed to driver control')
+            printErr(device, 'Unable to reset fan speed to driver control')
 
 
 def setFanSpeed(deviceList, fan):
     """ Set fan speed for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to set the fan speed (can be a single-item list)
-    level -- Fan speed level to set (0-255)
+    deviceList -- List of DRM devices (can be a single-item list)
+    level -- [0-255] Fan speed level
     """
     global RETCODE
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot set fan speed')
+            printErr(device, 'Unable to set fan speed')
             RETCODE = 1
             continue
-        hwmon = getHwmonFromDevice(device)
-        if not hwmon:
-            printLog(device, 'No corresponding HW Monitor found')
-            RETCODE = 1
-            continue
-        fanpath = os.path.join(hwmon, 'pwm1')
-        modepath = os.path.join(hwmon, 'pwm1_enable')
+        fanpath = getFilePath(device, 'fan')
+        modepath = getFilePath(device, 'fanmode')
         maxfan = getSysfsValue(device, 'fanmax')
         if not maxfan:
-            printLog(device, 'Cannot get max fan speed')
+            printErr(device, 'Unable to set fan speed')
+            logging.warning('GPU[%s]\t: Unable to get max fan level (file is empty)')
             RETCODE = 1
             continue
-        if fan.endswith('%'):
+        if str(fan).endswith('%'):
             fanpct = int(fan[:-1])
-            if fanpct > 100:
-                printLog(device, 'Invalid fan value ' + fan)
+            if fanpct > 100 or fanpct < 0:
+                printErr(device, 'Unable to set fan speed')
+                logging.error('GPU[%s]\t: Invalid fan percentage, %d is not between 0 and 100', parseDeviceName(device), fan)
                 RETCODE = 1
                 continue
             fan = str(int((fanpct * int(maxfan)) / 100))
         if int(fan) > int(maxfan):
-            printLog(device, 'Unable to set fan speed to ' + fan + ' : Max Level = ' + maxfan)
+            printErr(device, 'Unable to set fan speed')
+            logging.error('GPU[%s]\t: Fan value %s is greater than maximum level %s', parseDeviceName(device), fan, maxfan)
             RETCODE = 1
             continue
         if getSysfsValue(device, 'fanmode') != '1':
             if writeToSysfs(modepath, '1'):
                 printLog(device, 'Successfully set fan control to \'manual\'')
             else:
-                printLog(device, 'Unable to set fan control to \'manual\'')
+                printErr(device, 'Unable to set fan control to \'manual\'')
                 continue
         if writeToSysfs(fanpath, str(fan)):
             printLog(device, 'Successfully set fan speed to Level ' + str(fan))
         else:
-            printLog(device, 'Unable to set fan speed to Level ' + str(fan))
+            printErr(device, 'Unable to set fan speed to Level ' + str(fan))
 
 
 def setProfile(deviceList, profile):
-    """ Set CUSTOM Power Profile values for a list of devices.
+    """ Set Power Profile, or set CUSTOM Power Profile values for a list of devices.
 
     Parameters:
-    deviceList -- List of devices to specify the CUSTOM Power Profile for (can be a single-item list)
-    profile -- The profile to set
+    deviceList -- List of DRM devices (can be a single-item list)
+    profile -- Profile to set
     """
+    if len(profile) == 1:
+        execMsg = 'Power Profile to level ' + profile
+    else:
+        execMsg = 'CUSTOM Power Profile values'
     for device in deviceList:
         if writeProfileSysfs(device, profile):
-            printLog(device, 'Successfully set CUSTOM Power Profile values')
+            printLog(device, 'Successfully set ' + execMsg)
         else:
-            printLog(device, 'Unable to set CUSTOM Power Profile values')
+            printErr(device, 'Unable to set ' + execMsg)
 
 
 def resetProfile(deviceList):
     """ Reset profile for a list of a devices.
 
     Parameters:
-    deviceList -- List of devices to reset the CUSTOM Power Profile for (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
     for device in deviceList:
         if not getSysfsValue(device, 'profile'):
-            printLog(device, 'Unable to get current Power Profile')
+            printErr(device, 'Unable to reset Power Profile')
+            logging.debug('GPU[%s]\t: Unable to get current Power Profile', parseDeviceName(device))
             continue
         # Performance level must be set to manual for a reset of the profile to work
         setPerfLevel(device, 'manual')
         if not writeProfileSysfs(device, '0 ' * getNumProfileArgs(device)):
-            printLog(device, 'Unable to reset CUSTOM Power Profile values')
+            printErr(device, 'Unable to reset CUSTOM Power Profile values')
         if writeProfileSysfs(device, '0'):
             printLog(device, 'Successfully reset Power Profile')
         else:
-            printLog(device, 'Unable to reset Power Profile')
+            printErr(device, 'Unable to reset Power Profile')
         setPerfLevel(device, 'auto')
 
 
@@ -1299,22 +1697,22 @@ def resetOverDrive(deviceList):
     """ Reset OverDrive to 0 if needed. We check first as setting OD requires sudo
 
     Parameters:
-    deviceList -- List of devices to reset OverDrive (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
     for device in deviceList:
-        devpath = os.path.join(drmprefix, device, 'device')
-        odpath = os.path.join(devpath, 'pp_sclk_od')
-        odclkpath = os.path.join(devpath, 'pp_od_clk_voltage')
-        if not os.path.isfile(odpath):
-            printLog(device, 'Unable to reset OverDrive; OverDrive not available')
+        odpath = getFilePath(device, 'sclk_od')
+        odclkpath = getFilePath(device, 'clk_voltage')
+        if not odpath or not os.path.isfile(odpath):
+            printErr(device, 'Unable to reset OverDrive')
+            logging.debug('GPU[%s]\t: OverDrive not available', parseDeviceName(device))
             continue
         od = getSysfsValue(device, 'sclk_od')
         if not od or int(od) != 0:
             if not writeToSysfs(odpath, '0'):
-                printLog(device, 'Unable to reset OverDrive')
+                printErr(device, 'Unable to reset OverDrive')
                 continue
         printLog(device, 'OverDrive set to 0')
-        if os.path.isfile(odclkpath):
+        if odclkpath and os.path.isfile(odclkpath):
             if writeToSysfs(odclkpath, 'r') and writeToSysfs(odclkpath, 'c'):
                 printLog(device, 'Reset OverDrive DPM table')
 
@@ -1322,12 +1720,12 @@ def resetOverDrive(deviceList):
 def resetClocks(deviceList):
     """ Reset clocks to default
 
-    Reset sclk, mclk amd pclk to default values by setting performance level to auto, as well
+    Reset clocks to default values by setting performance level to auto, as well
     as setting OverDrive back to 0
 
 
     Parameters:
-    deviceList -- List of devices to reset clocks (can be a single-item list)
+    deviceList -- List of DRM devices (can be a single-item list)
     """
     for device in deviceList:
         resetOverDrive([device])
@@ -1337,16 +1735,69 @@ def resetClocks(deviceList):
         perf = getSysfsValue(device, 'perf')
 
         if not perf or not od or perf != 'auto' or od != '0':
-            printLog(device, 'Unable to reset clocks')
+            printErr(device, 'Unable to reset clocks')
         else:
             printLog(device, 'Successfully reset clocks')
+
+
+def resetGpu(device):
+    """ Perform a GPU reset on the specified device
+
+    Parameters:
+    device -- DRM Device identifier
+    """
+    global RETCODE
+    if isinstance(device, list) and len(device) > 1:
+        # This is primarily to prevent people using the GPU reset on all
+        # GPUs by mistake, since it's rare that more than one GPU is hanging
+        # at the same time.
+        logging.error('GPU Reset can only be performed on one GPU per call')
+        RETCODE = 1
+        return
+    # We don't capture the value because 'cat gpu_reset' just resets the
+    # GPU without returning anything. Also pass device[0] since the device
+    # passed in by argparse is a single-item list: ['cardX']
+    getSysfsValue(device[0], 'gpu_reset')
+    printLog(device[0], 'GPU reset was successful')
+
+
+def setRas(deviceList, rasAction, rasBlock, rasType):
+    """ Perform a RAS action on the devices
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    rasAction -- [enable|disable|inject] RAS Action to perform
+    rasBlock -- [$validRasBlocks] RAS block
+    rasType -- [ce|ue] Error type to enable/disable
+    """
+    if rasAction not in validRasActions:
+        print('Unable to perform RAS command %s on block %s for type %s' % (rasAction, rasBlock, rasType))
+        logging.debug('Action %s is not a valid RAS command' % rasAction)
+        return
+    if rasBlock not in validRasBlocks.keys():
+        print('Unable to perform RAS command %s on block %s for type %s' % (rasAction, rasBlock, rasType))
+        logging.debug('Block %s is not a valid RAS block' % rasBlock)
+        return
+    if rasType not in validRasTypes:
+        print('Unable to perform RAS command %s on block %s for type %s' % (rasAction, rasBlock, rasType))
+        logging.debug('Memory error type %s is not a valid RAS memory type' % rasAction)
+        return
+    printLogSpacer()
+    #NOTE PSP FW doesn't support enabling disabled counters yet
+    for device in deviceList:
+        if isRasControlAvailable(device):
+            rasPath = getFilePath(device, 'ras_ctrl')
+            rasCmd = '%s %s %s' % (rasAction, rasBlock, rasType)
+            writeToSysfs(rasPath, rasCmd)
+    printLogSpacer()
+    return
 
 
 def load(savefilepath, autoRespond):
     """ Load clock frequencies and fan speeds from a specified file.
 
     Parameters:
-    savefilepath -- Path to a file with saved clock frequencies and fan speeds
+    savefilepath -- Path to the save file
     autoRespond -- Response to automatically provide for all prompts
     """
 
@@ -1356,21 +1807,26 @@ def load(savefilepath, autoRespond):
     with open(savefilepath, 'r') as savefile:
         jsonData = json.loads(savefile.read())
         for (device, values) in jsonData.items():
-            if values['vJson'] != JSON_VERSION:
+            if values['vJson'] != CLOCK_JSON_VERSION:
                 print('Unable to load legacy clock file - file v' + str(values['vJson']) +
-                      ' != current v' + str(JSON_VERSION))
+                      ' != current v' + str(CLOCK_JSON_VERSION))
                 break
-            setFanSpeed([device], values['fan'])
-            setClockOverDrive([device], 'gpu', values['overdrivegpu'], autoRespond)
-            setClockOverDrive([device], 'mem', values['overdrivegpumem'], autoRespond)
-            setClocks([device], 'gpu', values['gpu'])
-            setClocks([device], 'mem', values['mem'])
-            setClocks([device], 'pcie', values['pcie'])
-            setProfile([device], values['profile'])
+            if values['fan']:
+                setFanSpeed([device], values['fan'])
+            if values['overdrivesclk']:
+                setClockOverDrive([device], 'sclk', values['overdrivesclk'], autoRespond)
+            if values['overdrivemclk']:
+                setClockOverDrive([device], 'mclk', values['overdrivemclk'], autoRespond)
+            for clk in validClockNames:
+                if clk in values['clocks']:
+                    setClocks([device], clk, values['clocks'][clk])
+            if values['profile']:
+                setProfile([device], values['profile'])
 
             # Set Perf level last, since setting OverDrive sets the Performance level
             # it to manual, and Profiles only work when the Performance level is auto
-            setPerfLevel(device, values['perflevel'])
+            if values['perflevel']:
+                setPerfLevel(device, values['perflevel'])
 
             printLog(device, 'Successfully loaded values from ' + savefilepath)
 
@@ -1379,13 +1835,11 @@ def save(deviceList, savefilepath):
     """ Save clock frequencies and fan speeds for a list of devices to a specified file path.
 
     Parameters:
-    deviceList -- List of devices to save the clock frequencies and fan speeds
-    savefilepath -- Location to save the clock frequencies and fan speeds
+    deviceList -- List of DRM devices (can be a single-item list)
+    savefilepath -- Path to use to create the save file
     """
     perfLevels = {}
-    gpuClocks = {}
-    memClocks = {}
-    pcieClocks = {}
+    clocks = {}
     fanSpeeds = {}
     overDriveGpu = {}
     overDriveGpuMem = {}
@@ -1397,20 +1851,38 @@ def save(deviceList, savefilepath):
         sys.exit()
     for device in deviceList:
         if not isDPMAvailable(device):
-            printLog(device, 'DPM not available - Cannot save clocks')
+            printErr(device, 'Unable to save clocks')
             continue
         perfLevels[device] = getSysfsValue(device, 'perf')
-        gpuClocks[device] = getCurrentClock(device, 'gpu', 'level')
-        memClocks[device] = getCurrentClock(device, 'mem', 'level')
-        pcieClocks[device] = getCurrentClock(device, 'pcie', 'level')
-        fanSpeeds[device] = getSysfsValue(device, 'fan')
+        for clks in validClockNames:
+            clocks[device] = clocks.get(device, {})
+            clk = getCurrentClock(device, clks, 'level')
+            if clk is None:
+                continue
+            clocks[device][clks] = clk
+        fanSpeeds[device] = getFanSpeed(device)[0]
         overDriveGpu[device] = getSysfsValue(device, 'sclk_od')
         overDriveGpuMem[device] = getSysfsValue(device, 'mclk_od')
         profiles[device] = getProfile(device)
-        jsonData[device] = {'vJson': JSON_VERSION, 'gpu': gpuClocks[device], 'mem': memClocks[device], 'pcie': pcieClocks[device], 'fan': fanSpeeds[device], 'overdrivegpu': overDriveGpu[device], 'overdrivegpumem': overDriveGpuMem[device], 'profile': profiles[device], 'perflevel': perfLevels[device]}
-        printLog(device, 'Current settings successfully saved to ' + savefilepath)
+        jsonData[device] = {'vJson': CLOCK_JSON_VERSION, 'clocks': clocks[device], 'fan': fanSpeeds[device], 'overdrivesclk': overDriveGpu[device], 'overdrivemclk': overDriveGpuMem[device], 'profile': profiles[device], 'perflevel': perfLevels[device]}
+    printLog(device, 'Current settings successfully saved to ' + savefilepath)
     with open(savefilepath, 'w') as savefile:
         json.dump(jsonData, savefile, ensure_ascii=True)
+
+
+def checkAmdGpus(deviceList):
+    """ Check if there are any AMD GPUs being queried,
+    print a warning if there are none
+
+    Parameters:
+    deviceList -- List of DRM devices (can be a single-item list)
+    """
+
+    for device in deviceList:
+        if isAmdDevice(device):
+            return True
+    return False
+
 
 # Below is for when called as a script instead of when imported as a module
 if __name__ == '__main__':
@@ -1422,7 +1894,7 @@ if __name__ == '__main__':
     groupResponse = parser.add_argument_group()
     groupOutput = parser.add_argument_group()
 
-    groupDev.add_argument('-d', '--device', help='Execute command on specified device', type=int)
+    groupDev.add_argument('-d', '--device', help='Execute command on specified device', type=int, nargs='+')
     groupDisplay.add_argument('-i', '--showid', help='Show GPU ID', action='store_true')
     groupDisplay.add_argument('-v', '--showvbios', help='Show VBIOS version', action='store_true')
     groupDisplay.add_argument('--showhw', help='Show Hardware details', action='store_true')
@@ -1439,14 +1911,20 @@ if __name__ == '__main__':
     groupDisplay.add_argument('-s', '--showclkfrq', help='Show supported GPU and Memory Clock', action='store_true')
     groupDisplay.add_argument('-u', '--showuse', help='Show current GPU use', action='store_true')
     groupDisplay.add_argument('-b', '--showbw', help='Show estimated PCIe use', action='store_true')
+    groupDisplay.add_argument('--showreplaycount', help='Show PCIe Replay Count', action='store_true')
     groupDisplay.add_argument('-S', '--showclkvolt', help='Show supported GPU and Memory Clocks and Voltages', action='store_true')
+    groupDisplay.add_argument('--showvoltage', help='Show current GPU voltage', action='store_true')
+    groupDisplay.add_argument('--showrasinfo', help='Show RAS enablement information and error counts for the specified block(s)', metavar='BLOCK', type=str, nargs='+')
+    groupDisplay.add_argument('--showfwinfo', help='Show FW information', metavar='BLOCK', type=str, nargs='*')
     groupDisplay.add_argument('-a' ,'--showallinfo', help='Show Temperature, Fan and Clock values', action='store_true')
+    groupDisplay.add_argument('--showmeminfo', help='Show Memory usage information for given block(s) TYPE', metavar='TYPE', type=str, nargs='+')
+    groupDisplay.add_argument('--showdriverversion', help='Show kernel driver version', action='store_true')
     groupDisplay.add_argument('--alldevices', help='Execute command on non-AMD devices as well as AMD devices', action='store_true')
 
-    groupAction.add_argument('-r', '--resetclocks', help='Reset sclk, mclk and pclk to default', action='store_true')
+    groupAction.add_argument('-r', '--resetclocks', help='Reset clocks and OverDrive to default', action='store_true')
     groupAction.add_argument('--setsclk', help='Set GPU Clock Frequency Level(s) (requires manual Perf level)', type=int, metavar='LEVEL', nargs='+')
     groupAction.add_argument('--setmclk', help='Set GPU Memory Clock Frequency Level(s) (requires manual Perf level)', type=int, metavar='LEVEL', nargs='+')
-    groupAction.add_argument('--setpclk', help='Set PCIE Clock Frequency Level(s) (requires manual Perf level)', type=int, metavar='LEVEL', nargs='+')
+    groupAction.add_argument('--setpcie', help='Set PCIE Clock Frequency Level(s) (requires manual Perf level)', type=int, metavar='LEVEL', nargs='+')
     groupAction.add_argument('--setslevel', help='Change GPU Clock frequency (MHz) and Voltage (mV) for a specific Level', metavar=('SCLKLEVEL', 'SCLK', 'SVOLT'), nargs=3)
     groupAction.add_argument('--setmlevel', help='Change GPU Memory clock frequency (MHz) and Voltage for (mV) a specific Level', metavar=('MCLKLEVEL', 'MCLK', 'MVOLT'), nargs=3)
     groupAction.add_argument('--resetfans', help='Reset fans to automatic (driver) control', action='store_true')
@@ -1458,6 +1936,10 @@ if __name__ == '__main__':
     groupAction.add_argument('--resetpoweroverdrive', help='Set the maximum GPU power back to the device deafult state', action='store_true')
     groupAction.add_argument('--setprofile', help='Specify Power Profile level (#) or a quoted string of CUSTOM Profile attributes "# # # #..." (requires manual Perf level)')
     groupAction.add_argument('--resetprofile', help='Reset Power Profile back to default', action='store_true')
+    groupAction.add_argument('--rasenable', help='Enable RAS for specified block and error type', type=str, nargs=2, metavar=('BLOCK', 'ERRTYPE'))
+    groupAction.add_argument('--rasdisable', help='Disable RAS for specified block and error type', type=str, nargs=2, metavar=('BLOCK', 'ERRTYPE'))
+    groupAction.add_argument('--rasinject', help='Inject RAS poison for specified block (ONLY WORKS ON UNSECURE BOARDS)', type=str, metavar='BLOCK', nargs=1)
+    groupAction.add_argument('--gpureset', help='Reset specified GPU (One GPU must be specified)', action='store_true')
 
     groupFile.add_argument('--load', help='Load Clock, Fan, Performance and Profile settings from FILE', metavar='FILE')
     groupFile.add_argument('--save', help='Save Clock, Fan, Performance and Profile settings to FILE', metavar='FILE')
@@ -1465,27 +1947,37 @@ if __name__ == '__main__':
     groupResponse.add_argument('--autorespond', help='Response to automatically provide for all prompts (NOT RECOMMENDED)', metavar='RESPONSE')
 
     groupOutput.add_argument('--loglevel', help='How much output will be printed for what program is doing, one of debug/info/warning/error/critical', metavar='ILEVEL')
+    groupOutput.add_argument('--json', help='Print output in JSON format', action='store_true')
 
     args = parser.parse_args()
 
+    logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.WARNING)
     if args.loglevel is not None:
         numericLogLevel = getattr(logging, args.loglevel.upper(), logging.WARNING)
-        logging.basicConfig(level=numericLogLevel)
+        logging.getLogger().setLevel(numericLogLevel)
 
-    # If there is a single device specified, use that for all commands, otherwise use a
+    # If there is one or more device specified, use that for all commands, otherwise use a
     # list of all available devices. Also use "is not None" as device 0 would
     # have args.device=0, and "if 0" returns false.
     if args.device is not None:
-        device = parseDeviceNumber(args.device)
-        if not doesDeviceExist(device):
-            print('No such device ' + device)
-            sys.exit()
-        if isAmdDevice(device) or args.alldevices:
-            deviceList = [device]
-        else:
-            print('No supported devices available to display')
+        deviceList = []
+        for dev in args.device:
+            device = parseDeviceNumber(dev)
+            if not doesDeviceExist(device):
+                print('No such device ' + device)
+                sys.exit()
+            if (isAmdDevice(device) or args.alldevices) and device not in deviceList:
+                deviceList.append(device)
+            else:
+                print('No supported devices available to display')
     else:
         deviceList = listDevices(args.alldevices)
+
+    # If we want JSON output, initialize the keys (devices)
+    if args.json:
+        PRINT_JSON = True
+        for device in deviceList:
+            JSON_DATA[device] = {}
 
     if args.showallinfo:
         args.showid = True
@@ -1493,24 +1985,29 @@ if __name__ == '__main__':
         args.showclocks = True
         args.showfan = True
         args.list = True
-        args.showclkfrq = True
         args.showuse = True
         args.showperflevel = True
         args.showoverdrive = True
         args.showmemoverdrive = True
         args.showmaxpower = True
-        args.showprofile = True
         args.showpower = True
-        args.showbw = True
+        args.showvoltage = True
+        args.showdriverversion = True
+        args.showreplaycount = True
+        if not PRINT_JSON:
+            args.showprofile = True
+            args.showclkfrq = True
+            args.showclkvolt = True
 
-    if args.setsclk or args.setmclk or args.setpclk or args.resetfans or args.setfan or args.setperflevel or \
+    if args.setsclk or args.setmclk or args.setpcie or args.resetfans or args.setfan or args.setperflevel or \
        args.load or args.resetclocks or args.setprofile or args.resetprofile or args.setoverdrive or \
        args.setmemoverdrive or args.setpoweroverdrive or args.resetpoweroverdrive or \
-       args.setslevel or args.setmlevel or len(sys.argv) == 1:
+       args.rasenable or args.rasdisable or args.rasinject or \
+       args.setslevel or args.setmlevel or args.gpureset:
         relaunchAsSudo()
 
     # Header for the SMI
-    print('\n\n', headerSpacer, '        ROCm System Management Interface        ', headerSpacer, sep='')
+    print('\n\n', headerSpacer + headerString + headerSpacer, sep='')
 
     # If all fields are requested, only print it for devices with DPM support. There is no point
     # in printing a bunch of "Feature unavailable" messages and cluttering the output
@@ -1523,12 +2020,36 @@ if __name__ == '__main__':
     if args.showallinfo:
         for device in deviceList:
             if not isDPMAvailable(device):
-                printLog(device, 'WARNING: DPM not available, skipping output for this device')
+                printErr(device, 'Skipping output for this device')
                 deviceList.remove(device)
 
-    if len(sys.argv) == 1 or len(sys.argv) == 2 and (args.loglevel or args.alldevices):
+    # Don't do reset in combination with any other command
+    if args.gpureset:
+        if not args.device:
+            logging.error('No device specified. One device must be specified for GPU reset')
+            print(footerSpacer + footerString + footerSpacer, sep='')
+            sys.exit(1)
+        logging.debug('Only executing GPU reset, no other commands will be executed')
+        resetGpu(deviceList)
+        print(footerSpacer + footerString + footerSpacer, sep='')
+        sys.exit(0)
+
+    if not checkAmdGpus(deviceList):
+        logging.warning('No AMD GPUs specified')
+
+    if len(sys.argv) == 1 or \
+        len(sys.argv) == 2 and (args.alldevices or args.json) or \
+        len(sys.argv) == 3 and (args.alldevices and args.json):
+        if PRINT_JSON:
+            print("ERROR: Cannot print JSON output for concise output (no flags)")
+            printLogSpacer()
+            sys.exit(1)
         showAllConcise(deviceList)
     if args.showhw:
+        if PRINT_JSON:
+            print("ERROR: Cannot print JSON output for --showhw")
+            printLogSpacer()
+            sys.exit(1)
         showAllConciseHw(deviceList)
     if args.showid:
         showId(deviceList)
@@ -1541,39 +2062,66 @@ if __name__ == '__main__':
     if args.showclocks:
         showCurrentClocks(deviceList)
     if args.showgpuclocks:
-        showCurrentGpuClocks(deviceList)
+        showCurrentClock(deviceList, 'sclk')
     if args.showfan:
         showCurrentFans(deviceList)
     if args.showperflevel:
         showPerformanceLevel(deviceList)
     if args.showoverdrive:
-        showOverDrive(deviceList, 'gpu')
+        showOverDrive(deviceList, 'sclk')
     if args.showmemoverdrive:
-        showOverDrive(deviceList, 'mem')
+        showOverDrive(deviceList, 'mclk')
+    if args.showdriverversion:
+        showVersion(deviceList, 'driver')
     if args.showmaxpower:
         showMaxPower(deviceList)
     if args.showprofile:
+        if PRINT_JSON:
+            print("ERROR: Cannot print JSON output for --showprofile")
+            printLogSpacer()
+            sys.exit(1)
         showProfile(deviceList)
     if args.showpower:
         showPower(deviceList)
     if args.showclkfrq:
+        if PRINT_JSON:
+            print("ERROR: Cannot print JSON output for --showclkfrq")
+            printLogSpacer()
+            sys.exit(1)
         showClocks(deviceList)
     if args.showuse:
         showGpuUse(deviceList)
     if args.showbw:
         showPcieBw(deviceList)
+    if args.showreplaycount:
+        showPcieReplayCount(deviceList)
     if args.showclkvolt:
+        if PRINT_JSON:
+            print("ERROR: Cannot print JSON output for --showclkvolt")
+            printLogSpacer()
+            sys.exit(1)
         showPowerPlayTable(deviceList)
+    if args.showvoltage:
+        showVoltage(deviceList)
+    if args.showmeminfo:
+        showMemInfo(deviceList, args.showmeminfo)
+    if args.showrasinfo:
+        showRasInfo(deviceList, args.showrasinfo)
+    # The second condition in the below 'if' statement checks whether showfwinfo was given arguments.
+    # It compares itself to the string representation of the empty list and prints all firmwares.
+    # This allows the user to call --showfwinfo without the 'all' argument and still print all.
+    if args.showfwinfo or str(args.showfwinfo) == '[]':
+        showFwInfo(deviceList, args.showfwinfo)
     if args.setsclk:
-        setClocks(deviceList, 'gpu', args.setsclk)
+        setClocks(deviceList, 'sclk', args.setsclk)
     if args.setmclk:
-        setClocks(deviceList, 'mem', args.setmclk)
-    if args.setpclk:
-        setClocks(deviceList, 'pcie', args.setpclk)
+        setClocks(deviceList, 'mclk', args.setmclk)
+    if args.setpcie:
+        setClocks(deviceList, 'pcie', args.setpcie)
     if args.setslevel:
-        setPowerPlayTableLevel(deviceList, 'gpu', args.setslevel, args.autorespond)
+        setPowerPlayTableLevel(deviceList, 'sclk', args.setslevel, args.autorespond)
     if args.setmlevel:
-        setPowerPlayTableLevel(deviceList, 'mem', args.setmlevel, args.autorespond)
+        setPowerPlayTableLevel(deviceList, 'mclk', args.setmlevel, args.autorespond)
     if args.resetfans:
         resetFans(deviceList)
     if args.setfan:
@@ -1581,9 +2129,9 @@ if __name__ == '__main__':
     if args.setperflevel:
         setPerformanceLevel(deviceList, args.setperflevel)
     if args.setoverdrive:
-        setClockOverDrive(deviceList, 'gpu', args.setoverdrive, args.autorespond)
+        setClockOverDrive(deviceList, 'sclk', args.setoverdrive, args.autorespond)
     if args.setmemoverdrive:
-        setClockOverDrive(deviceList, 'mem', args.setmemoverdrive, args.autorespond)
+        setClockOverDrive(deviceList, 'mclk', args.setmemoverdrive, args.autorespond)
     if args.setpoweroverdrive:
         setPowerOverDrive(deviceList, args.setpoweroverdrive, args.autorespond)
     if args.resetpoweroverdrive:
@@ -1592,15 +2140,24 @@ if __name__ == '__main__':
         setProfile(deviceList, args.setprofile)
     if args.resetprofile:
         resetProfile(deviceList)
+    if args.rasenable:
+        setRas(deviceList, 'enable', args.rasenable[0], args.rasenable[1])
+    if args.rasdisable:
+        setRas(deviceList, 'disable', args.rasdisable[0], args.rasdisable[1])
+    if args.rasinject:
+        setRas(deviceList, 'inject', args.rasinject[0], args.rasinject[1])
     if args.load:
         load(args.load, args.autorespond)
     if args.save:
         save(deviceList, args.save)
 
+    if PRINT_JSON:
+        print(json.dumps(JSON_DATA))
+
     # If RETCODE isn't 0, inform the user
     if RETCODE:
-        print('WARNING: One or more commands failed')
+        logging.warning('One or more commands failed')
 
     # Footer for the SMI
-    print(headerSpacer, '               End of ROCm SMI Log              ', headerSpacer, '\n', sep='')
+    print(footerSpacer + footerString + footerSpacer, sep='')
     sys.exit(RETCODE)

@@ -1,11 +1,11 @@
 module.exports = async function(json, step, overclockStatus = "") {
   // Dependancies
   const cp = require("child_process");
-  const fs = require("fs");
 
   // Setup
   const ocHelper = require("./helpers/HiveOS_API.js");
   const ocSettings = require("../Overclocks.json");
+  const amdGPU = require("./helpers/amd_rocm_parser");
 
   if (overclockStatus == "") {
     overclocksStatus = {
@@ -82,38 +82,46 @@ module.exports = async function(json, step, overclockStatus = "") {
         overclocksStatus["Overclocks"]["Amd"]["Mem"] = ["Initializing"];
       if (overclocksStatus["Overclocks"]["Amd"]["REF"] == null)
         overclocksStatus["Overclocks"]["Amd"]["REF"] = ["Initializing"];
-
+      let amdRocm = cp.execSync("./ROC-smi/rocm-smi");
+      let amdStats = amdGPU(amdRocm.toString());
+      const amdIDS = [];
+      amdStats.gpus.forEach(gpu => {
+        amdIDS.push(gpu.gpu);
+      });
       var amdCommand = "";
 
       if (step == "rxboost") {
-        for (let i = 0; i < json.Amd.GPU.length; i++) {
+        // Setting the performance to MANUAL
+        amdIDS.forEach(id => {
           amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi ";
-          amdCommand += `-d ${i} `;
+          amdCommand += `-d ${id} `;
           amdCommand += `--setperflevel manual `;
           cp.execSync(`sudo ${amdCommand}`);
-        }
+        });
 
-        for (let i = 0; i < json.Amd.GPU.length; i++) {
+        // Setting the Mem overdrive %
+        amdIDS.forEach(id => {
           overclocksStatus["Overclocks"]["Amd"]["Mem"][i] =
             ocSettings.Amd.Mem_overdrive;
           amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi ";
-          amdCommand += `-d ${i} `;
+          amdCommand += `-d ${id} `;
           amdCommand += `--setmemoverdrive ${ocSettings.Amd.Mem_overdrive} `;
           amdCommand += "--autorespond Y";
           cp.execSync(`sudo ${amdCommand}`);
-        }
+        });
 
+        // Setting the REF value
         amdCommand = "~/nOS/helpers/amdmemtweak ";
-        for (let i = 0; i < json.Amd.GPU.length; i++) {
-          overclocksStatus["Overclocks"]["Amd"]["REF"][i] =
+        amdIDS.forEach(id => {
+          overclocksStatus["Overclocks"]["Amd"]["REF"][id] =
             ocSettings.Amd.Rxboost;
-          if (i == 0) amdCommand += `--i ${i},`;
+          if (i == 0) amdCommand += `--i ${id},`;
           if (i < json.Amd.GPU.length - 1) {
-            amdCommand += `${i},`;
+            amdCommand += `${id},`;
           } else {
-            amdCommand += `${i} `;
+            amdCommand += `${id} `;
           }
-        }
+        });
         amdCommand += `--REF ${ocSettings.Amd.Rxboost}`;
         cp.execSync(`sudo ${amdCommand}`);
       }

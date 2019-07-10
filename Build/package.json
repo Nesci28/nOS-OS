@@ -1,0 +1,17 @@
+{
+  "name": "build",
+  "version": "1.0.0",
+  "description": "Download: test1 md5: test2.",
+  "main": "md5.js",
+  "dependencies": {
+    "cryptr": "^4.0.2",
+    "fs": "^0.0.1-security",
+    "monk": "^6.0.6"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
