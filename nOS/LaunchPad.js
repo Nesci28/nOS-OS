@@ -3,8 +3,8 @@ const fs = require("fs");
 const cp = require("child_process");
 // const util = require("util");
 const md5File = require("md5-file");
-const mv = require("mv");
 const wifi = require("node-wifi");
+const mv = require("move-file");
 const prettyjson = require("prettyjson");
 const prettyjsonOptions = {
   keysColor: "white",
@@ -263,12 +263,12 @@ function checkXorg() {
   }
 }
 
-function moveConfig() {
+async function moveConfig() {
   const files = ["Overclocks.json", "SystemConfig.json", "CoinsConfig.json"];
   for (let file of files) {
     if (fs.existsSync(`/ntfs/${file}`)) {
       if (!checkFiles(`/home/nos/${file}`, `/ntfs/${file}`)) {
-        move(`${file}`);
+        await move(`${file}`);
       }
     }
   }
@@ -278,8 +278,6 @@ function checkFiles(file1, file2) {
   return md5File.sync(file1) === md5File.sync(file2);
 }
 
-function move(file) {
-  mv(`/ntfs/${file}`, `/home/nos/${file}`, function(err) {
-    console.log(err);
-  });
+async function move(file) {
+  await mv(`/ntfs/${file}`, `/home/nos/${file}`);
 }

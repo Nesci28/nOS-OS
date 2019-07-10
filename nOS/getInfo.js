@@ -109,6 +109,7 @@ module.exports = function(step, json = "", counter) {
         cp.execSync("./start.sh");
       } else {
         console.log("You are currently on the latest version of nOS.");
+        console.log("Launching the miner(s)...  Please Wait.");
       }
     }
 
