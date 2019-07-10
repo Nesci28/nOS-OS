@@ -101,7 +101,7 @@ module.exports = async function(json, step, overclockStatus = "") {
 
         // Setting the Mem overdrive %
         amdIDS.forEach(id => {
-          overclocksStatus["Overclocks"]["Amd"]["Mem"][i] =
+          overclocksStatus["Overclocks"]["Amd"]["Mem"][id] =
             ocSettings.Amd.Mem_overdrive;
           amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi ";
           amdCommand += `-d ${id} `;
@@ -112,11 +112,12 @@ module.exports = async function(json, step, overclockStatus = "") {
 
         // Setting the REF value
         amdCommand = "~/nOS/helpers/amdmemtweak ";
-        amdIDS.forEach(id => {
+        amdIDS.forEach((id, index) => {
           overclocksStatus["Overclocks"]["Amd"]["REF"][id] =
             ocSettings.Amd.Rxboost;
-          if (i == 0) amdCommand += `--i ${id},`;
-          if (i < json.Amd.GPU.length - 1) {
+          if (index == 0) {
+            amdCommand += `--i ${id},`;
+          } else if (index < amdIDS.length - 1) {
             amdCommand += `${id},`;
           } else {
             amdCommand += `${id} `;

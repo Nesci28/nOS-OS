@@ -335,15 +335,17 @@ module.exports = function(step, json = "", counter) {
   }
 
   async function getMinerLog(brand) {
-    let jlist = JSON.parse(cp.execSync("pm2 jlist").toString());
-    for (let i = 0; i < jlist.length; i++) {
-      if (jlist[i].name == `miner${brand}`) {
-        let minerLog = await readLastLines.read(
-          `/home/nos/.pm2/logs/miner${brand}-out.log`,
-          15
-        );
-        return minerLog;
+    try {
+      let jlist = JSON.parse(cp.execSync("pm2 jlist").toString());
+      for (let i = 0; i < jlist.length; i++) {
+        if (jlist[i].name == `miner${brand}`) {
+          let minerLog = await readLastLines.read(
+            `/home/nos/.pm2/logs/miner${brand}-out.log`,
+            15
+          );
+          return minerLog;
+        }
       }
-    }
+    } catch {}
   }
 };
