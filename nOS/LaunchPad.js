@@ -4,7 +4,6 @@ const cp = require("child_process");
 // const util = require("util");
 const md5File = require("md5-file");
 const wifi = require("node-wifi");
-const mv = require("move-file");
 const prettyjson = require("prettyjson");
 const prettyjsonOptions = {
   keysColor: "white",
@@ -268,7 +267,7 @@ async function moveConfig() {
   for (let file of files) {
     if (fs.existsSync(`/ntfs/${file}`)) {
       if (!checkFiles(`/home/nos/${file}`, `/ntfs/${file}`)) {
-        await move(`${file}`);
+        cp.execSync(`sudo mv /ntfs/${file} /home/nos/${file}`);
       }
     }
   }
@@ -276,8 +275,4 @@ async function moveConfig() {
 
 function checkFiles(file1, file2) {
   return md5File.sync(file1) === md5File.sync(file2);
-}
-
-async function move(file) {
-  await mv(`/ntfs/${file}`, `/home/nos/${file}`);
 }
