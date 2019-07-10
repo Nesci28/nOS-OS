@@ -93,16 +93,9 @@ module.exports = async function(json, step, powerStatus = "") {
 
       if (brand == "Amd") {
         let amdGpuID = json[brand]["GPU"][i]["ID"];
-        try {
-          cp.execSync(
-            `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive 100000 --autorespond yes`
-          ).toString();
-        } catch (ex) {
-          var maxWatt = ex.stdout.toString();
-          maxWatt = parseInt(maxWatt.match(/than (.*)W/)[1]);
-        }
+        let minWatt = json[brand]["GPU"][i]["Min Watt"];
+        let maxWatt = json[brand]["GPU"][i]["Max Watt"];
 
-        let minWatt = (maxWatt / 2).toFixed(0);
         nextWatt = Math.round(
           Number(minWatt) + ((maxWatt - minWatt) / 50) * (maxPower - 50)
         );

@@ -1,7 +1,7 @@
 // Dependancies
 const fs = require("fs");
 const cp = require("child_process");
-const util = require("util");
+// const util = require("util");
 const md5File = require("md5-file");
 const mv = require("mv");
 const wifi = require("node-wifi");
@@ -244,8 +244,14 @@ function checkXorg() {
       .execSync("nvidia-smi --query-gpu=gpu_name --format=noheader,csv | wc -l")
       .toString()
       .trim();
+    if (fs.existsSync("./Data/Init.txt")) {
+      var fileExists = true;
+    } else {
+      var fileExists = false;
+      fs.writeFileSync("./Data/Init.txt", "");
+    }
 
-    if (xorgNumber !== gpuNumber) {
+    if (xorgNumber !== gpuNumber || !fileExists) {
       cp.execSync("sudo nvidia-xconfig -a --cool-bits 28");
       let command = "sudo nvidia-settings ";
       for (let i = 0; i < gpuNumber; i++) {

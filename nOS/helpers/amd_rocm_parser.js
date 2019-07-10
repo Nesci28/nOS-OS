@@ -23,7 +23,8 @@ module.exports = function(stdout) {
         mclock: parseFloat(toks[4]),
         fan: parseInt(toks[5]),
         perf: toks[6],
-        utilization: parseInt(toks[9])
+        utilization: parseInt(toks[9]),
+        maxwatt: parseInt(toks[7])
       };
       temps += gpu.temp;
       totalPower += gpu.pwr;

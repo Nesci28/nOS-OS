@@ -82,7 +82,7 @@ module.exports = async function(json, step, overclockStatus = "") {
         overclocksStatus["Overclocks"]["Amd"]["Mem"] = ["Initializing"];
       if (overclocksStatus["Overclocks"]["Amd"]["REF"] == null)
         overclocksStatus["Overclocks"]["Amd"]["REF"] = ["Initializing"];
-      let amdRocm = cp.execSync("./ROC-smi/rocm-smi");
+      let amdRocm = cp.execSync("~/nOS/helpers/ROC-smi/rocm-smi");
       let amdStats = amdGPU(amdRocm.toString());
       const amdIDS = [];
       amdStats.gpus.forEach(gpu => {

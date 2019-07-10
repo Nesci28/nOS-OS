@@ -83,6 +83,8 @@ sudo mv copy_file.txt /mnt/USB/home/nos/.bashrc
 sudo cp SystemConfig.json /mnt/USB/home/nos/SystemConfig.json
 sudo cp CoinsConfig.json /mnt/USB/home/nos/CoinsConfig.json
 sudo cp Overclocks.json /mnt/USB/home/nos/Overclocks.json
+sudo mkdir /mnt/USB/home/nos/nOS/Data/
+sudo rm /mnt/USB/home/nos/nOS/Data/Init.txt
 sudo chmod -R a+rwX /mnt/USB/home/nos
 cd /mnt/USB/home/nos
 
@@ -177,23 +179,33 @@ for ((i = 0; i < 10; i++)); do
     done
   fi
 done
+for ((i = 0; i < 10; i++)); do
+  ID=$(gdrive list | grep "nOS.zst" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
+  if [[ ! -z ${ID} ]]; then
+    response=''
+    while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
+      response=$(gdrive delete ${ID})
+      sleep 1
+    done
+  fi
+done
 echo -e "Done deleting the old version of nOS on the gdrive"
 
-7z a nOS.zip nOS.img
-# zstdmt --long nOS.img nOS.zip
+# 7z a nOS.zip nOS.img
+zstdmt --long nOS.img -o nOS.zst
 
-md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
+md5hash=$(md5sum nOS.zst | sed 's/  */ /g' | cut -d ' ' -f1)
 
 response=''
 while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
-  response=$(gdrive upload nOS.zip)
+  response=$(gdrive upload nOS.zst)
   sleep 1
 done
 echo -e "Done uploading the new version of nOS on the gdrive"
 
 ID=''
 while [[ -z ${ID} ]]; do
-  ID=$(gdrive list | grep "nOS.zip" | sed 's/  */ /g' | cut -d ' ' -f1)
+  ID=$(gdrive list | grep "nOS.zst" | sed 's/  */ /g' | cut -d ' ' -f1)
   sleep 1
 done
 echo -e "gdrive ID of the new version of nOS is : ${ID}"

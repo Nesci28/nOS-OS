@@ -190,6 +190,8 @@ module.exports = function(step, json = "", counter) {
         gpuObject["Temperature"] = amdStats["gpus"][i]["temp"];
         gpuObject["Watt"] = amdStats["gpus"][i]["pwr"];
         gpuObject["Fan Speed"] = amdStats["gpus"][i]["fan"];
+        gpuObject["Max Watt"] = amdStats["gpus"][i]["maxwatt"];
+        gpuObject["Min Watt"] = Math.round(gpuObject["Max Watt"] / 2);
         gpuObject["Memory Timings"] = amdMem[i];
         gpuObject["Name"] = amdName[i];
         // gpuObject["Name"] = amdStats["gpus"][i][7]
