@@ -1,6 +1,6 @@
 nosFolder=$(find /home -type d -name nOS 2>/dev/null)
 cd ${nosFolder}
-process=$(pm2 jlist | jq -r '.[].name' | grep LaunchPad)
+process=$(pm2 jlist | grep LaunchPad)
 if [[ ! -z ${process} ]]; then
   node LaunchPad.js stop
 fi
