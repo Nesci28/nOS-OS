@@ -113,10 +113,11 @@ module.exports = async function(json, step, overclockStatus = "") {
         // Setting the REF value
         amdCommand = "~/nOS/helpers/amdmemtweak ";
         amdIDS.forEach((id, index) => {
-          overclocksStatus["Overclocks"]["Amd"]["REF"][id] =
-            ocSettings.Amd.Rxboost;
-          if (index == 0) {
-            amdCommand += `--i ${id},`;
+          // overclocksStatus["Overclocks"]["Amd"]["REF"][id] = ocSettings.Amd.Rxboost;
+          if (index == 0 && amdIDS.length == 1) {
+            amdCommand += `--i ${id} `;
+          } else if (index == 0 && amdIDS.length > 1) {
+            amdCommand += `--i ${id}, `;
           } else if (index < amdIDS.length - 1) {
             amdCommand += `${id},`;
           } else {
@@ -128,7 +129,10 @@ module.exports = async function(json, step, overclockStatus = "") {
       }
 
       if (step == "stop") {
-        amdCommand += "~/nOS/helpers/ROC-smi/rocm-smi --resetclocks";
+        amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi --resetclocks";
+        cp.execSync(`sudo ${amdCommand}`);
+        amdCommand =
+          "~/nOS/helpers/ROC-smi/rocm-smi --resetpoweroverdrive --autorespond Y";
         cp.execSync(`sudo ${amdCommand}`);
       }
     }

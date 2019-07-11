@@ -13,16 +13,16 @@ const prettyjsonOptions = {
 };
 
 // Requirements
-const info = require("./getInfo.js");
-const powerControl = require("./PowerController.js");
-const ocControl = require("./OverclockController.js");
-const tempControl = require("./FanController.js");
-const coins = require("./Coins.js");
-const watchdog = require("./WatchDog.js");
+let info = require("./getInfo.js");
+let powerControl = require("./PowerController.js");
+let ocControl = require("./OverclockController.js");
+let tempControl = require("./FanController.js");
+let coins = require("./Coins.js");
+let watchdog = require("./WatchDog.js");
+let shellinabox = require("./shellinabox.js");
 const DB = require("./DB.js");
-const shellinabox = require("./shellinabox.js");
 // const showUI = require('./UI.js');
-const systemConfig = require("../SystemConfig.json");
+let systemConfig = require("../SystemConfig.json");
 
 if (process.argv[process.argv.length - 1] == "stop") {
   (async () => {
@@ -159,10 +159,8 @@ if (process.argv[process.argv.length - 2] == "gpu") {
 async function stop() {
   let json = await info("stop");
 
-  if (json.Nvidia.GPU.length > 0) {
-    let overclocks = await ocControl(json, "stop");
-    console.log(overclocks);
-  }
+  let overclocks = await ocControl(json, "stop");
+  console.log(overclocks);
 
   let temperature = await tempControl(json, "stop");
   console.log(temperature);
@@ -268,9 +266,21 @@ async function moveConfig() {
     if (fs.existsSync(`/ntfs/${file}`)) {
       if (!checkFiles(`/home/nos/${file}`, `/ntfs/${file}`)) {
         cp.execSync(`sudo mv /ntfs/${file} /home/nos/${file}`);
+        if (file == "SystemConfig.json") {
+          systemConfig = require("../SystemConfig.json");
+        }
       }
     }
   }
+
+  info = require("./getInfo.js");
+  powerControl = require("./PowerController.js");
+  ocControl = require("./OverclockController.js");
+  tempControl = require("./FanController.js");
+  coins = require("./Coins.js");
+  watchdog = require("./WatchDog.js");
+  shellinabox = require("./shellinabox.js");
+  systemConfig = require("../SystemConfig.json");
 }
 
 function checkFiles(file1, file2) {
