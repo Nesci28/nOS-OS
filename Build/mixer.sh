@@ -87,6 +87,8 @@ sudo mkdir /mnt/USB/home/nos/nOS/Data/
 sudo rm /mnt/USB/home/nos/nOS/Data/Init.txt
 sudo chmod -R a+rwX /mnt/USB/home/nos
 cd /mnt/USB/home/nos
+sudo mkdir Logs
+sudo touch ./Logs/History.txt
 
 size=$(sudo df -h /mnt/USB | tail -1 | sed 's/  */ /g' | cut -d ' ' -f3 | sed 's/G//g')
 size=$(echo "(${size} + 0.6)" | scale=0 bc)

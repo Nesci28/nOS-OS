@@ -62,69 +62,96 @@ async function launchPad(
     if (step !== "init") {
       console.log("Updating the values...");
     }
+    if (step == "init") {
+      console.log("[1/9] Fetching the new informations");
+    } else if (counter == 5 || counter % 2 == 0) {
+      console.log("[1/5] Fetching the new informations");
+    } else {
+      console.log("[1/4] Fetching the new informations");
+    }
     json = await info(step, json, counter);
   }
 
   if (step == "init") {
-    cp.execSync("sudo ~/nOS/helpers/ROC-smi/rocm-smi -r");
     cp.execSync("sudo timedatectl set-ntp true");
+    console.log("[2/9] Shellinabox");
     shell = await shellinabox(step);
     json.Shellinabox = shell.Shellinabox.URL;
+    console.log("[3/9] Configuring the GPU(s) Power");
     power = await powerControl(json, step);
+    console.log("[4/9] Configuring the GPU(s) Overclocks");
     overclocks = await ocControl(json, step);
+    console.log("[5/9] Launching the miner(s)");
     coin = await coins(json);
+    console.log("[6/9] Setting up tmux");
     cp.exec("./tmux.sh && exit &");
     // cp.execSync("termite -e ./tmux.sh && exit &");
+    console.log("[7/9] Sending the newest values to the WebUI");
     database = await DB(json, "");
   }
 
   if (counter == 5) {
+    console.log("[2/5] Configuring the GPU(s) Overclocks (second pass)");
     overclocks = await ocControl(json, "rxboost", overclocks);
   }
 
   if (step == "init" || step == "running") {
+    if (step == "init") {
+      console.log("[8/9] Configuring the GPU(s) Temperature");
+    } else if (counter == 5) {
+      console.log("[3/5] Configuring the GPU(s) Temperature");
+    } else if (counter % 2 == 0) {
+      console.log("[2/5] Configuring the GPU(s) Temperature");
+    } else {
+      console.log("[2/4] Configuring the GPU(s) Temperature");
+    }
     var temperature = await tempControl(json, step);
+    if (step == "init") {
+      console.log("[9/9] Starting Watchdog");
+    } else if (counter == 5) {
+      console.log("[4/5] Checking Watchdog");
+    } else if (counter % 2 == 0) {
+      console.log("[3/5] Checking Watchdog");
+    } else {
+      console.log("[3/4] Checking Watchdog");
+    }
     var watch = await watchdog(json, step);
   }
 
   if (step == "running") {
     if (counter % 2 == 0) {
+      console.log("[4/5] Checking if the GPU(s) Power need(s) to be adjusted");
       power = await powerControl(json, step, power);
     }
     var existingDB = database.DB.Entry;
+    if (counter == 5 || counter % 2 == 0) {
+      console.log("[5/5] Sending the newest values to the WebUI");
+    } else {
+      console.log("[4/4] Sending the newest values to the WebUI");
+    }
     database = await DB(json, existingDB);
   }
 
   if (counter == 480) {
     counter = 0;
     cp.execSync("sudo timedatectl set-ntp true");
+    console.log("[5/5] Shellinabox");
     shell = await shellinabox("shellinabox");
     json.Shellinabox.Ngrok = shell.Shellinabox.URL;
     json.Shellinabox.Localtunnel = shell.Localtunnel.URL;
   }
 
-  // let ui = await showUI(json)
   process.stdout.write("\033c");
-  // console.log(ui)
-  // console.log(util.inspect(coin, false, null, true));
-  // console.log(util.inspect(power, false, null, true));
   console.log(prettyjson.render(coin, prettyjsonOptions));
   console.log("\n");
   console.log(prettyjson.render(power, prettyjsonOptions));
   console.log("\n");
   if (overclocks !== undefined) {
-    // console.log(util.inspect(overclocks, false, null, true));
     console.log(prettyjson.render(overclocks, prettyjsonOptions));
     console.log("\n");
   }
-  // console.log(util.inspect(temperature, false, null, true));
-  // console.log(util.inspect(watch, false, null, true));
-  // console.log(database);
-  // console.log(shell, counter);
   console.log(prettyjson.render(temperature, prettyjsonOptions));
   console.log("\n");
-  // console.log(prettyjson.render(watch, prettyjsonOptions));
-  // console.log(prettyjson.render(database, prettyjsonOptions));
   console.log(prettyjson.render(shell, prettyjsonOptions));
   console.log("\n");
   console.log("Ngrok Counter: " + counter);

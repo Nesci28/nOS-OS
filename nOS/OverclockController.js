@@ -113,7 +113,8 @@ module.exports = async function(json, step, overclockStatus = "") {
         // Setting the REF value
         amdCommand = "~/nOS/helpers/amdmemtweak ";
         amdIDS.forEach((id, index) => {
-          // overclocksStatus["Overclocks"]["Amd"]["REF"][id] = ocSettings.Amd.Rxboost;
+          overclocksStatus["Overclocks"]["Amd"]["REF"][id] =
+            ocSettings.Amd.Rxboost;
           if (index == 0 && amdIDS.length == 1) {
             amdCommand += `--i ${id} `;
           } else if (index == 0 && amdIDS.length > 1) {

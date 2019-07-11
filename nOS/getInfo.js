@@ -106,10 +106,9 @@ module.exports = function(step, json = "", counter) {
             json["Remote GitHash"]
         );
         console.log("Updated nOS to the latest Version.");
-        cp.execSync("./start.sh");
+        cp.exec("./start.sh");
       } else {
         console.log("You are currently on the latest version of nOS.");
-        console.log("Launching the miner(s)...  Please Wait.");
       }
     }
 
