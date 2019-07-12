@@ -113,7 +113,7 @@ module.exports = async function(json, step, overclockStatus = "") {
           amdCommand += `-d ${id} `;
           amdCommand += `--setmemoverdrive ${ocSettings.Amd.Mem_overdrive} `;
           amdCommand += "--autorespond Y";
-          cp.execSync(`sudo ${amdCommand}`);
+          cp.execSync(`sudo ${amdCommand} 2>/dev/null`);
         });
 
         // Setting the REF value

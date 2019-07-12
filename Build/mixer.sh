@@ -7,6 +7,7 @@ echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
+npm uninstall -g localtunnel
 echo "" > /etc/resolv.conf
 EOT
 }

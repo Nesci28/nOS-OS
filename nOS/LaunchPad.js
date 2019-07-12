@@ -76,7 +76,7 @@ async function launchPad(
     cp.execSync("sudo timedatectl set-ntp true");
     console.log("[2/9] Shellinabox");
     shell = await shellinabox(step);
-    json.Shellinabox = shell.Shellinabox.URL;
+    json.Shellinabox = shell;
     console.log("[3/9] Configuring the GPU(s) Power");
     power = await powerControl(json, step);
     console.log("[4/9] Configuring the GPU(s) Overclocks");
@@ -137,8 +137,7 @@ async function launchPad(
     cp.execSync("sudo timedatectl set-ntp true");
     console.log("[5/5] Shellinabox");
     shell = await shellinabox("shellinabox");
-    json.Shellinabox.Ngrok = shell.Shellinabox.URL;
-    json.Shellinabox.Localtunnel = shell.Localtunnel.URL;
+    json.Shellinabox.Ngrok = shell.Ngrok.URL;
   }
 
   process.stdout.write("\033c");

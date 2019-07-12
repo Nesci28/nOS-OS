@@ -1,12 +1,13 @@
 module.exports = async function(step) {
   // Dependancies
   const ngrok = require("ngrok");
+  const localtunnel = require("localtunnel");
   const cp = require("child_process");
 
   const systemConfigs = require("../SystemConfig.json");
 
   const shellinabox = {
-    Shellinabox: {
+    Ngrok: {
       URL: null
     },
     Localtunnel: {
@@ -27,17 +28,17 @@ module.exports = async function(step) {
     if (step == "shellinabox" || step == "stop") {
       await ngrok.disconnect();
       await ngrok.kill();
-      shellinabox.Shellinabox.URL = "Stopped";
+      shellinabox.Ngrok.URL = "Stopped";
+      shellinabox.Localtunnel.URL = "Stopped";
     }
 
     if (step !== "stop") {
-      shellinabox.Shellinabox.URL = await ngrok.connect(4200);
-      let ls = cp.spawn("lt", ["--port", "4200"]);
-      ls.stdout.on("data", function(data) {
-        shellinabox.Localtunnel.URL = data
-          .toString()
-          .split(" ")[3]
-          .replace("\n", "");
+      shellinabox.Ngrok.URL = await ngrok.connect(4200);
+      return new Promise(function(resolve, reject) {
+        localtunnel(4200, function(err, tunnel) {
+          shellinabox.Localtunnel.URL = tunnel.url;
+          resolve(shellinabox);
+        });
       });
     }
   }

@@ -29,7 +29,7 @@ if (process.argv[process.argv.length - 1] == "start") {
   console.log("Turning ON nOS");
   kill();
   cp.exec(
-    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=/home/nos/.Xauthority ./start.sh`
+    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} ./start.sh`
   );
   process.exit();
 }
@@ -57,10 +57,19 @@ if (process.argv[process.argv.length - 1] == "hash") {
 }
 
 function kill() {
-  const xauthority = cp.execSync;
   cp.execSync(
-    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=/home/nos/.Xauthority node LaunchPad.js stop`
+    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} node LaunchPad.js stop`
   );
+}
+
+function findXAuthority() {
+  return cp
+    .execSync(
+      "ps -u $(id -u) -o pid= | xargs -I{} cat /proc/{}/environ 2>/dev/null | tr '\\0' '\\n' | grep -m1 '^XAUTHORITY='"
+    )
+    .toString()
+    .trim()
+    .split("=")[1];
 }
 
 function findnOS() {
