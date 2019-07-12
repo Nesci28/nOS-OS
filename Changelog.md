@@ -1,7 +1,21 @@
+[11-07-2019]
+- Changed the way the system restarts nOS when an update is detected
+- Hopefully this version as a perfect first boot experience...
+
+[10-07-2019]
+- Changed the way the JSON Config files are getting moved out of the NTFS partition
+- Changed the way the system reacts on a new push from GitHub
+
+[09-07-2019]
+- Updated Rocm-Smi and the parser for it
+- Fixed some bugs that was happening on first boot
+- Fixed some bugs in the AMD Overlock process
+
 [05-07-2019]
 
-- Added the hability to Overclock AMD GPUs
-- Added the RXBOOST function which sets the REF to 120 (might have to check if the GPU is a RX model)
+- Added the ability to Overclock AMD GPUs
+- Added the RXBOOST function which sets the REF to 30 (might have to check if the GPU is a RX model)
+- Added SHH access through Localtunnel
 
 [24-04-2019]
 

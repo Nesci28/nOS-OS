@@ -79,7 +79,8 @@ module.exports = async function(json, existingDB = "") {
       let cd = cp
         .execSync("find /home -type d -name nOS 2>/dev/null")
         .toString();
-      cp.spawn(`./${cd}/start.sh`);
+      cp.exec(`./${cd}/start.sh`);
+      process.exit();
     }
   }
 

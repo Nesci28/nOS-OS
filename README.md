@@ -2,6 +2,11 @@
 
 [Changelog](https://github.com/Nesci28/nOS/blob/master/Changelog.md)
 
+# WARNING
+This version of nOS has only been tested with :
+- Nvidia GPUs (GTX 9XX/10XX)
+- AMD GPUs (RX 4XX/5XX)
+
 Download: [https://drive.google.com/open?id=1D8TVpOFoKOI2HqUTVFuTra-XpZLQrtci](https://drive.google.com/open?id=1D8TVpOFoKOI2HqUTVFuTra-XpZLQrtci)  
 md5: 2e7ba18415b7cea30a4ef01218477278
 
