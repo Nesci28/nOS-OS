@@ -7,8 +7,8 @@ This version of nOS has only been tested with :
 - Nvidia GPUs (GTX 9XX/10XX)
 - AMD GPUs (RX 4XX/5XX)
 
-Download: [https://drive.google.com/open?id=1D8TVpOFoKOI2HqUTVFuTra-XpZLQrtci](https://drive.google.com/open?id=1D8TVpOFoKOI2HqUTVFuTra-XpZLQrtci)  
-md5: 2e7ba18415b7cea30a4ef01218477278
+Download: [https://drive.google.com/open?id=1kmOozkOor5z8nbGcNRJZpFqOsuaXSPuI](https://drive.google.com/open?id=1kmOozkOor5z8nbGcNRJZpFqOsuaXSPuI)  
+md5: f7a7feae1bd20af7b99c28be21ab2e09
 
 # Installation
 ```bash 
