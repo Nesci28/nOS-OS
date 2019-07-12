@@ -187,13 +187,13 @@ async function stop() {
   let json = await info("stop");
 
   let overclocks = await ocControl(json, "stop");
-  console.log(overclocks);
+  console.log(prettyjson.render(overclocks, prettyjsonOptions));
 
   let temperature = await tempControl(json, "stop");
-  console.log(temperature);
+  console.log(prettyjson.render(temperature, prettyjsonOptions));
 
   let shell = await shellinabox("stop");
-  console.log(shell);
+  console.log(prettyjson.render(shell, prettyjsonOptions));
 
   cp.execSync("pm2 kill");
   cp.execSync("rm -rf ~/.pm2/logs/*");
@@ -276,7 +276,9 @@ function checkXorg() {
     }
 
     if (xorgNumber !== gpuNumber || !fileExists) {
-      cp.execSync("sudo nvidia-xconfig -a --cool-bits 28");
+      cp.execSync(
+        "sudo nvidia-xconfig -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration"
+      );
       let command = "sudo nvidia-settings ";
       for (let i = 0; i < gpuNumber; i++) {
         command += "-a [gpu:" + i + "]/GPUFanControlState=1 ";

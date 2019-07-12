@@ -106,7 +106,7 @@ module.exports = function(step, json = "", counter) {
             json["Remote GitHash"]
         );
         console.log("Updated nOS to the latest Version.");
-        cp.exec("./start.sh");
+        cp.execSync("sudo shutdown -r now");
       } else {
         console.log("You are currently on the latest version of nOS.");
       }

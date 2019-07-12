@@ -33,8 +33,14 @@ module.exports = async function(json, step, overclockStatus = "") {
         if (step == "init") {
           for (let i = 0; i < json.Nvidia.GPU.length; i++) {
             if (ocSettings.Nvidia["Use Hive_OC"]) {
-              let hiveOC = await ocHelper(json.Nvidia.GPU[i].Name, "OC");
-
+              for (let i = 0; i < 10; i++) {
+                try {
+                  var hiveOC = await ocHelper(json.Nvidia.GPU[i].Name, "OC");
+                  break;
+                } catch {
+                  continue;
+                }
+              }
               if (hiveOC && ocCommand == "") ocCommand += "nvidia-settings ";
               if (hiveOC.core_clock) {
                 ocCommand += `-c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=${
