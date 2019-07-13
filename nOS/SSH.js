@@ -28,10 +28,12 @@ if (process.argv[process.argv.length - 1] == "stop") {
 if (process.argv[process.argv.length - 1] == "start") {
   console.log("Turning ON nOS");
   kill();
-  cp.exec(
+  const start = cp.spawn(
     `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} ./start.sh`
   );
-  process.exit();
+  start.stdout.on("data", function(data) {
+    console.log(data.toString());
+  });
 }
 
 if (process.argv[process.argv.length - 1] == "miner") {

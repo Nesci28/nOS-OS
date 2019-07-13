@@ -1,6 +1,7 @@
 // Dependancies
 const fs = require("fs");
 const cp = require("child_process");
+const axios = require("axios");
 // const util = require("util");
 const md5File = require("md5-file");
 const wifi = require("node-wifi");
@@ -42,6 +43,7 @@ if (process.argv[process.argv.length - 1] == "init") {
         systemConfig["Wifi Password"]
       );
     }
+    await clearDB();
     let counter = 0;
     await launchPad("init", counter);
   })();
@@ -199,7 +201,7 @@ async function stop() {
   cp.execSync("pm2 flush");
 
   const pm2Processes = [
-    "Launchpad",
+    "LaunchPad",
     "minerNvidia",
     "minerAmd",
     "minerCpu",
@@ -249,6 +251,73 @@ async function connection(ssid, password) {
       return "Connected";
     }
   });
+}
+
+async function clearDB() {
+  const urlGet = "https://nos-server.now.sh/db";
+  const urlPost = "https://nos-server.now.sh/rig/add";
+  const urlPostAlternative = "https://node-nos.herokuapp.com/api/v2/rig/add";
+  const emptyJson = {
+    _id: null,
+    "New Time": new Date().getTime(),
+    "Old Time": null,
+    "Runtime Start": new Date().getTime(),
+    Runtime: null,
+    Username: systemConfig["WebApp Username"],
+    Password: systemConfig["WebApp Password"],
+    Hostname: systemConfig["Rig Hostname"],
+    IP: null,
+    Shellinabox: {
+      Ngrok: null,
+      Localtunnel: null
+    },
+    "Local GitHash": null,
+    "Remote GitHash": null,
+    "External Command": null,
+    Nvidia: {
+      Coin: null,
+      Algo: null,
+      "Total Hashrate": null,
+      "Total Watt": null,
+      "Avg Temperature": null,
+      "Coin Info": {},
+      GPU: {},
+      "Miner Log": null
+    },
+    Amd: {
+      Coin: null,
+      Algo: null,
+      "Total Hashrate": null,
+      "Total Watt": null,
+      "Avg Temperature": null,
+      "Coin Info": {},
+      GPU: {},
+      "Miner Log": null
+    },
+    CPU: {
+      Coins: null,
+      Algo: null,
+      "Total Hashrate": null,
+      "Coin Info": {},
+      GPU: {},
+      "Miner Log": null
+    },
+    "System Config": { serial: 1 },
+    "Coins Config": { serial: 1 },
+    "Overclocks Config": { serial: 1 }
+  };
+  const existingDB = await axios.post(urlGet, {
+    username: systemConfig["WebApp Username"],
+    password: systemConfig["WebApp Password"],
+    hostname: systemConfig["Rig Hostname"]
+  });
+  if (existingDB.data) {
+    try {
+      await axios.post(urlPost, emptyJson);
+    } catch {
+      await axios.post(urlPostAlternative, emptyJson);
+    }
+  }
 }
 
 function checkXorg() {

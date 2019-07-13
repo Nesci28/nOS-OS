@@ -111,7 +111,10 @@ module.exports = function(step, json = "", counter) {
         let cd = cp
           .execSync("find /home -type d -name nOS 2>/dev/null")
           .toString();
-        cp.exec(`./${cd}/start.sh`);
+        const start = cp.spawn(`./${cd}/start.sh`);
+        start.stdout.on("data", function(data) {
+          console.log(data.toString());
+        });
         process.exit();
       }
     }
