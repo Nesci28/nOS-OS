@@ -63,11 +63,11 @@ async function launchPad(
       console.log("Updating the values...");
     }
     if (step == "init") {
-      console.log("[1/9] Fetching the new informations");
+      console.log("[1/9] Fetching the rig info / Checking for update");
     } else if (counter == 5 || counter % 2 == 0) {
-      console.log("[1/5] Fetching the new informations");
+      console.log("[1/5] Fetching the new rig info");
     } else {
-      console.log("[1/4] Fetching the new informations");
+      console.log("[1/4] Fetching the new rig info");
     }
     json = await info(step, json, counter);
   }

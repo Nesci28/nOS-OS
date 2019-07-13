@@ -98,6 +98,8 @@ module.exports = function(step, json = "", counter) {
       json["Remote GitHash"] = await remoteHash();
 
       if (json["Local GitHash"] !== json["Remote GitHash"]) {
+        console.log("Updating nOS to the lastest version... Please wait.");
+        console.log("nOS will automatically restart afterward.");
         await simpleGit.pull("origin", "master");
         fs.writeFileSync(
           "../Logs/History.txt",
@@ -111,8 +113,6 @@ module.exports = function(step, json = "", counter) {
           .toString();
         cp.exec(`./${cd}/start.sh`);
         process.exit();
-      } else {
-        console.log("You are currently on the latest version of nOS.");
       }
     }
 
