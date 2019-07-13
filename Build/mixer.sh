@@ -133,7 +133,7 @@ if [[ -z ${loopDevice} ]]; then
   read -p "Something went wrong, try to run \"sudo losetup -fP nOS.img\" manually" var
 fi
 
-sudo mkfs.ext4 ${loopDevice}p4
+yes Y | sudo mkfs.ext4 ${loopDevice}p4
 sudo dd if=${disk}1 of=${loopDevice}p1 bs=512 status=progress
 sudo dd if=${disk}2 of=${loopDevice}p2 bs=512 status=progress
 sudo dd if=${disk}3 of=${loopDevice}p3 bs=512 status=progress
