@@ -22,16 +22,7 @@ module.exports = async function(step) {
       }
 
       if (!shellIsRunning) cp.exec("shellinaboxd &");
-    }
 
-    if (step == "shellinabox" || step == "stop") {
-      await ngrok.disconnect();
-      await ngrok.kill();
-      shellinabox.Ngrok.URL = "Stopped";
-      shellinabox.Localtunnel.URL = "Stopped";
-    }
-
-    if (step !== "stop") {
       shellinabox.Ngrok.URL = await ngrok.connect(4200);
       let ls = cp.spawn("lt", ["--port", "4200", "&"]);
       return new Promise(function(resolve, reject) {
@@ -43,6 +34,13 @@ module.exports = async function(step) {
           resolve(shellinabox);
         });
       });
+    }
+
+    if (step == "ngrok" || step == "stop") {
+      await ngrok.disconnect();
+      await ngrok.kill();
+      shellinabox.Ngrok.URL = "Stopped";
+      shellinabox.Localtunnel.URL = "Stopped";
     }
   }
   return shellinabox;
