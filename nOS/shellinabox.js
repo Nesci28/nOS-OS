@@ -1,18 +1,20 @@
-module.exports = async function(step) {
+module.exports = async function(step, shellinabox = "") {
   // Dependancies
   const ngrok = require("ngrok");
   const cp = require("child_process");
 
   const systemConfigs = require("../SystemConfig.json");
 
-  const shellinabox = {
-    Ngrok: {
-      URL: null
-    },
-    Localtunnel: {
-      URL: null
-    }
-  };
+  if (shellinabox == "") {
+    shellinabox = {
+      Ngrok: {
+        URL: null
+      },
+      Localtunnel: {
+        URL: null
+      }
+    };
+  }
   if (systemConfigs.Shellinabox) {
     if (step == "init") {
       try {
@@ -36,7 +38,13 @@ module.exports = async function(step) {
       });
     }
 
-    if (step == "ngrok" || step == "stop") {
+    if (step == "ngrok") {
+      await ngrok.disconnect();
+      await ngrok.kill();
+      shellinabox.Ngrok.URL = await ngrok.connect(4200);
+    }
+
+    if (step == "stop") {
       await ngrok.disconnect();
       await ngrok.kill();
       shellinabox.Ngrok.URL = "Stopped";

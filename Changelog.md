@@ -1,3 +1,16 @@
+[15-07-2019]
+- Fixed an issue with shellinabox's links
+- Deleted, from the UI, the unused GPU brand if any..
+
+[14-07-2019]
+- Fixed the issue when Ngrok SSH link was getting updated, it was overwriting Localtunnel link.
+- GPU(s) fans initialize before the miner(s)
+
+[12-07-2019]
+- More tests on first boot
+- Worked on the way nOS gets restarted
+- First boot works perfectly now 
+
 [11-07-2019]
 - Changed the way the system restarts nOS when an update is detected
 - Hopefully this version as a perfect first boot experience...

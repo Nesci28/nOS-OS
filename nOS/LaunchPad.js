@@ -5,6 +5,7 @@ const axios = require("axios");
 // const util = require("util");
 const md5File = require("md5-file");
 const wifi = require("node-wifi");
+const cloneDeep = require("clone-deep");
 const prettyjson = require("prettyjson");
 const prettyjsonOptions = {
   keysColor: "white",
@@ -55,6 +56,8 @@ async function launchPad(
   coin,
   power,
   overclocks,
+  temperature,
+  watch,
   database = "",
   json = "",
   shell = ""
@@ -83,13 +86,16 @@ async function launchPad(
     power = await powerControl(json, step);
     console.log("[4/9] Configuring the GPU(s) Overclocks");
     overclocks = await ocControl(json, step);
-    console.log("[5/9] Launching the miner(s)");
+    console.log("[5/9] Configuring the GPU(s) Temperature");
+    temperature = await tempControl(json, step);
+    console.log("[6/9] Launching the miner(s)");
     coin = await coins(json);
-    console.log("[6/9] Setting up tmux");
+    console.log("[7/9] Setting up tmux");
     cp.exec("./tmux.sh && exit &");
-    // cp.execSync("termite -e ./tmux.sh && exit &");
-    console.log("[7/9] Sending the newest values to the WebUI");
+    console.log("[8/9] Sending the newest values to the WebUI");
     database = await DB(json, "");
+    console.log("[9/9] Starting Watchdog");
+    watch = await watchdog(json, step);
   }
 
   if (counter == 5) {
@@ -97,27 +103,23 @@ async function launchPad(
     overclocks = await ocControl(json, "rxboost", overclocks);
   }
 
-  if (step == "init" || step == "running") {
-    if (step == "init") {
-      console.log("[8/9] Configuring the GPU(s) Temperature");
-    } else if (counter == 5) {
+  if (step == "running") {
+    if (counter == 5) {
       console.log("[3/5] Configuring the GPU(s) Temperature");
     } else if (counter % 2 == 0) {
       console.log("[2/5] Configuring the GPU(s) Temperature");
     } else {
       console.log("[2/4] Configuring the GPU(s) Temperature");
     }
-    var temperature = await tempControl(json, step);
-    if (step == "init") {
-      console.log("[9/9] Starting Watchdog");
-    } else if (counter == 5) {
+    temperature = await tempControl(json, step);
+    if (counter == 5) {
       console.log("[4/5] Checking Watchdog");
     } else if (counter % 2 == 0) {
       console.log("[3/5] Checking Watchdog");
     } else {
       console.log("[3/4] Checking Watchdog");
     }
-    var watch = await watchdog(json, step);
+    watch = await watchdog(json, step);
   }
 
   if (step == "running") {
@@ -138,21 +140,60 @@ async function launchPad(
     counter = 0;
     cp.execSync("sudo timedatectl set-ntp true");
     console.log("[5/5] Shellinabox");
-    shell = await shellinabox("shellinabox");
-    json.Shellinabox.Ngrok = shell.Ngrok.URL;
+    shell = await shellinabox("ngrok", shell);
+    json.Shellinabox.Ngrok.URL = shell.Ngrok.URL;
   }
 
   process.stdout.write("\033c");
-  console.log(prettyjson.render(coin, prettyjsonOptions));
-  console.log("\n");
-  console.log(prettyjson.render(power, prettyjsonOptions));
-  console.log("\n");
-  if (overclocks !== undefined) {
-    console.log(prettyjson.render(overclocks, prettyjsonOptions));
-    console.log("\n");
+  if (json.Nvidia.GPU.length > 0 && json.Amd.GPU.length > 0) {
+    console.log(prettyjson.render(coin, prettyjsonOptions));
+    console.log(prettyjson.render(power, prettyjsonOptions));
+    if (overclocks !== undefined) {
+      console.log(prettyjson.render(overclocks, prettyjsonOptions));
+    }
+    console.log(prettyjson.render(temperature, prettyjsonOptions));
   }
-  console.log(prettyjson.render(temperature, prettyjsonOptions));
-  console.log("\n");
+
+  if (json.Nvidia.GPU.length > 0 && json.Amd.GPU.length == 0) {
+    let coinNvidia = cloneDeep(coin);
+    delete coinNvidia.Coins.Amd;
+    console.log(prettyjson.render(coinNvidia, prettyjsonOptions));
+
+    let powerNvidia = cloneDeep(power);
+    delete powerNvidia.Power.Amd;
+    console.log(prettyjson.render(powerNvidia, prettyjsonOptions));
+
+    if (overclocks !== undefined) {
+      let overclocksNvidia = cloneDeep(overclocks);
+      delete overclocksNvidia.Overclocks.Amd;
+      console.log(prettyjson.render(overclocksNvidia, prettyjsonOptions));
+    }
+
+    let temperatureNvidia = cloneDeep(temperature);
+    delete temperatureNvidia.Temperature.Amd;
+    console.log(prettyjson.render(temperatureNvidia, prettyjsonOptions));
+  }
+
+  if (json.Nvidia.GPU.length == 0 && json.Amd.GPU.length > 0) {
+    let coinAmd = cloneDeep(coin);
+    delete coinAmd.Coins.Amd;
+    console.log(prettyjson.render(coinAmd, prettyjsonOptions));
+
+    let powerAmd = cloneDeep(power);
+    delete powerAmd.Power.Nvidia;
+    console.log(prettyjson.render(powerAmd, prettyjsonOptions));
+
+    if (overclocks !== undefined) {
+      let overclocksAmd = cloneDeep(overclocks);
+      delete overclocksAmd.Overclocks.Nvidia;
+      console.log(prettyjson.render(overclocksAmd, prettyjsonOptions));
+    }
+
+    let temperatureAmd = cloneDeep(temperature);
+    delete temperatureAmd.Temperature.Nvidia;
+    console.log(prettyjson.render(temperatureAmd, prettyjsonOptions));
+  }
+
   console.log(prettyjson.render(shell, prettyjsonOptions));
   console.log("\n");
   console.log("Ngrok Counter: " + counter);
@@ -165,6 +206,8 @@ async function launchPad(
       coin,
       power,
       overclocks,
+      temperature,
+      watch,
       database,
       json,
       shell,
