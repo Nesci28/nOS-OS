@@ -1,6 +1,12 @@
+[16-07-2019]
+- Deleted the Ngrok option for SSH tunnel
+- Changed the SSH tunnels link reset timer to 15 mins (down from 2hours)
+- Fixed the UI not showing on non-mixed rig
+
 [15-07-2019]
 - Fixed an issue with shellinabox's links
 - Deleted, from the UI, the unused GPU brand if any..
+- Added Serveo as a third option for Shellinabox
 
 [14-07-2019]
 - Fixed the issue when Ngrok SSH link was getting updated, it was overwriting Localtunnel link.

@@ -63,7 +63,9 @@ async function launchPad(
   shell = ""
 ) {
   if (step !== "shellinabox") {
-    process.stdout.write("\033c");
+    if (step == "init") {
+      process.stdout.write("\033c");
+    }
     if (step !== "init") {
       console.log("Updating the values...");
     }
@@ -136,12 +138,11 @@ async function launchPad(
     database = await DB(json, existingDB);
   }
 
-  if (counter == 480) {
+  if (counter == 60) {
     counter = 0;
     cp.execSync("sudo timedatectl set-ntp true");
     console.log("[5/5] Shellinabox");
-    shell = await shellinabox("ngrok", shell);
-    json.Shellinabox.Ngrok.URL = shell.Ngrok.URL;
+    shell = await shellinabox("reset", shell);
   }
 
   process.stdout.write("\033c");
@@ -196,7 +197,7 @@ async function launchPad(
 
   console.log(prettyjson.render(shell, prettyjsonOptions));
   console.log("\n");
-  console.log("Ngrok Counter: " + counter);
+  console.log("Tunnel reset Counter: " + counter + "/60");
 
   setTimeout(async () => {
     counter++;
@@ -210,8 +211,7 @@ async function launchPad(
       watch,
       database,
       json,
-      shell,
-      counter
+      shell
     );
   }, 15000);
 }
@@ -311,8 +311,8 @@ async function clearDB() {
     Hostname: systemConfig["Rig Hostname"],
     IP: null,
     Shellinabox: {
-      Ngrok: null,
-      Localtunnel: null
+      Localtunnel: { url: null },
+      Serveo: { url: null }
     },
     "Local GitHash": null,
     "Remote GitHash": null,
@@ -334,7 +334,7 @@ async function clearDB() {
       "Total Watt": null,
       "Avg Temperature": null,
       "Coin Info": {},
-      GPU: {},
+      GPU: [],
       "Miner Log": null
     },
     CPU: {
@@ -342,7 +342,7 @@ async function clearDB() {
       Algo: null,
       "Total Hashrate": null,
       "Coin Info": {},
-      GPU: {},
+      GPU: [],
       "Miner Log": null
     },
     "System Config": { serial: 1 },

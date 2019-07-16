@@ -50,7 +50,7 @@ module.exports = function(step, json = "", counter) {
         "Total Watt": null,
         "Avg Temperature": null,
         "Coin Info": {},
-        GPU: {},
+        GPU: [],
         "Miner Log": null
       },
       Amd: {
@@ -60,7 +60,7 @@ module.exports = function(step, json = "", counter) {
         "Total Watt": null,
         "Avg Temperature": null,
         "Coin Info": {},
-        GPU: {},
+        GPU: [],
         "Miner Log": null
       },
       CPU: {
@@ -68,7 +68,7 @@ module.exports = function(step, json = "", counter) {
         Algo: null,
         "Total Hashrate": null,
         "Coin Info": {},
-        GPU: {},
+        GPU: [],
         "Miner Log": null
       },
       "System Config": systemConfig,
