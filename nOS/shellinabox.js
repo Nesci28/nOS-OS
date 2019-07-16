@@ -89,6 +89,11 @@ async function createTunnels(step, systemConfigs, cp, shellinabox) {
             shellinabox.Serveo.URL = await data
               .toString()
               .split(" ")[4]
+              .replace(
+                /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+                ""
+              )
+              .replace("\r", "")
               .replace("\n", "");
             resolve(shellinabox);
           }
