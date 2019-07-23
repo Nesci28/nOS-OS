@@ -124,6 +124,14 @@ async function launchPad(
     watch = await watchdog(json, step);
   }
 
+  if (counter == 60) {
+    counter = 0;
+    cp.execSync("sudo timedatectl set-ntp true");
+    console.log("[5/5] Shellinabox");
+    shell = await shellinabox("reset", shell);
+    json.Shellinabox = shell;
+  }
+
   if (step == "running") {
     if (counter % 2 == 0) {
       console.log("[4/5] Checking if the GPU(s) Power need(s) to be adjusted");
@@ -136,13 +144,6 @@ async function launchPad(
       console.log("[4/4] Sending the newest values to the WebUI");
     }
     database = await DB(json, existingDB);
-  }
-
-  if (counter == 60) {
-    counter = 0;
-    cp.execSync("sudo timedatectl set-ntp true");
-    console.log("[5/5] Shellinabox");
-    shell = await shellinabox("reset", shell);
   }
 
   process.stdout.write("\033c");
@@ -239,7 +240,7 @@ async function stop() {
   let shell = await shellinabox("stop");
   console.log(prettyjson.render(shell, prettyjsonOptions));
 
-  cp.execSync("pm2 kill");
+  cp.execSync("pm2 kill 2>&1 >/dev/null");
   cp.execSync("rm -rf ~/.pm2/logs/*");
   cp.execSync("pm2 flush");
 
@@ -260,31 +261,24 @@ async function stop() {
       .split("\n");
     for (let ID of pm2List) {
       try {
-        cp.execSync(`kill ${ID}`);
-      } catch {}
+        cp.execSync(`kill ${ID} 2>&1 >/dev/null`);
+      } catch { }
     }
   }
 
   try {
-    if (
-      cp
-        .execSync("tmux list-sessions | grep miner")
-        .toString()
-        .trim()
-    ) {
-      cp.execSync("tmux kill-session -t miner");
-    }
-  } catch {}
+    cp.execSync("tmux kill-session -t miner 2>&1 >/dev/null");
+  } catch { }
 }
 
 async function connection(ssid, password) {
-  require("dns").resolve("www.google.com", async function(err) {
+  require("dns").resolve("www.google.com", async function (err) {
     if (err) {
       console.log("No connection");
       await wifi.init({
         iface: null // network interface, choose a random wifi interface if set to null
       });
-      await wifi.connect({ ssid: ssid, password: password }, function(err) {
+      await wifi.connect({ ssid: ssid, password: password }, function (err) {
         if (err) {
           console.log(err);
         }

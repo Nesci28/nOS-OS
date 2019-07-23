@@ -1,5 +1,6 @@
 // Dependancies
 const cp = require("child_process");
+const readLastLines = require("read-last-lines");
 
 const getInfo = require("./getInfo.js");
 
@@ -14,7 +15,7 @@ if (process.argv[process.argv.length - 1] == "help") {
 
 if (process.argv[process.argv.length - 1] == "stats") {
   let stream = cp.spawn("pm2", ["logs", "0", "--raw"]);
-  stream.stdout.on("data", function(data) {
+  stream.stdout.on("data", function (data) {
     console.log(data.toString());
   });
 }
@@ -28,39 +29,66 @@ if (process.argv[process.argv.length - 1] == "stop") {
 if (process.argv[process.argv.length - 1] == "start") {
   console.log("Turning ON nOS");
   kill();
-  const start = cp.spawn(
-    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} ./start.sh`
-  );
-  start.stdout.on("data", function(data) {
+  const startOutput = start();
+  startOutput.stdout.on("data", function (data) {
     console.log(data.toString());
   });
 }
 
 if (process.argv[process.argv.length - 1] == "miner") {
-  (async () => {
-    let tmux = await cp
-      .execSync("tmux has-sessions -t miners 2>/dev/null; echo $?")
-      .toString()
-      .trim();
-    if (tmux == 0)
-      console.log(cp.execSync("tmux capture-pane -pS 40 -e").toString());
+  return (async () => {
+    const logs = await getMinerLog();
+    for (log in logs) {
+      console.log(logs[log])
+    }
+    process.exit();
   })();
-  process.exit();
+}
+
+async function getMinerLog(brand) {
+  const minerLogs = {
+    "Nvidia": "",
+    "Amd": "",
+    "CPU": ""
+  };
+
+  try {
+    const brands = ["Nvidia", "Amd", "CPU"];
+    for (let brand of brands) {
+      let jlist = JSON.parse(cp.execSync("pm2 jlist").toString());
+      for (let i = 0; i < jlist.length; i++) {
+        if (jlist[i].name == `miner${brand}`) {
+          let minerLog = await readLastLines.read(
+            `/home/nos/.pm2/logs/miner${brand}-out.log`,
+            15
+          );
+          minerLogs[brand] = minerLog;
+        }
+      }
+    }
+  } catch { }
+  return minerLogs;
 }
 
 if (process.argv[process.argv.length - 1] == "hash") {
   (async () => {
-    let json = await getInfo();
-    if (json.Nvidia.GPU.length > 0) console.log(json.Nvidia["Total Hashrate"]);
-    if (json.Amd.GPU.length > 0) console.log(json.Amd["Total Hashrate"]);
-    if (json.CPU["Total Hashrate"]) console.log(json.CPU["Total Hashrate"]);
+    let json = await getInfo("ssh");
+    if (json.Nvidia.GPU.length > 0) console.log("Nvidia Total Hashrate: ", json.Nvidia["Total Hashrate"]);
+    if (json.Amd.GPU.length > 0) console.log("Amd Total Hashrate:", json.Amd["Total Hashrate"]);
+    if (json.CPU["Total Hashrate"]) console.log("CPU Total Hashrate:", json.CPU["Total Hashrate"]);
     process.exit();
   })();
 }
 
 function kill() {
-  cp.execSync(
+  return cp.execSync(
     `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} node LaunchPad.js stop`
+  );
+}
+
+function start() {
+  return cp.exec(
+    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} ./start.sh`
   );
 }
 

@@ -1,4 +1,4 @@
-module.exports = function(step, json = "", counter) {
+module.exports = function (step, json = "", counter) {
   // Dependancies
   const cp = require("child_process");
   const fs = require("fs");
@@ -34,7 +34,7 @@ module.exports = function(step, json = "", counter) {
       Runtime: null,
       Username: systemConfig["WebApp Username"],
       Password: systemConfig["WebApp Password"],
-      Hostname: systemConfig["Rig Hostname"],
+      Hostname: systemConfig["Rig Hostname"] || getMacAddr(),
       IP: ip.address(),
       Shellinabox: {
         Ngrok: null,
@@ -104,15 +104,15 @@ module.exports = function(step, json = "", counter) {
         fs.writeFileSync(
           "../Logs/History.txt",
           new Date().getTime() +
-            " Updated nOS to the latest Version. " +
-            json["Remote GitHash"]
+          " Updated nOS to the latest Version. " +
+          json["Remote GitHash"]
         );
         console.log("Updated nOS to the latest Version.");
         let cd = cp
           .execSync("find /home -type d -name nOS 2>/dev/null")
           .toString();
         const start = cp.spawn(`./${cd}/start.sh`);
-        start.stdout.on("data", function(data) {
+        start.stdout.on("data", function (data) {
           console.log(data.toString());
         });
         process.exit();
@@ -120,21 +120,21 @@ module.exports = function(step, json = "", counter) {
     }
 
     if (systemConfig["Nvidia Coin"] && setType[0]) {
-      if (step == "init") await getCoins("Nvidia");
+      if (step == "init" || step == "ssh") await getCoins("Nvidia");
       await getGPU("Nvidia");
       if (step !== "stop")
         await getHashrate("Nvidia", json["Nvidia"]["Coin Info"]["miner"]);
       json["Nvidia"]["Miner Log"] = await getMinerLog("Nvidia");
     }
     if (systemConfig["Amd Coin"] && setType[1]) {
-      if (step == "init") await getCoins("Amd");
+      if (step == "init" || step == "ssh") await getCoins("Amd");
       await getGPU("Amd");
       if (step !== "stop")
         await getHashrate("Amd", json["Amd"]["Coin Info"]["miner"]);
       json["Amd"]["Miner Log"] = await getMinerLog("Amd");
     }
     if (systemConfig["Cpu Coin"] && setType[2]) {
-      if (step == "init") await getCoins("Cpu");
+      if (step == "init" || step == "ssh") await getCoins("Cpu");
       await getGPU("Cpu");
       if (step !== "stop") await getHashrate("Cpu");
       json["Cpu"]["Miner Log"] = await getMinerLog("Cpu");
@@ -228,7 +228,7 @@ module.exports = function(step, json = "", counter) {
     let minerRunning = undefined;
     try {
       minerRunning = await checkRunningMiner(brand);
-    } catch {}
+    } catch { }
     // run the getHashrate for that miner
     if (minerRunning) {
       let hashrate = require("../Miners/" + miner + "/getHashrate.js");
@@ -353,6 +353,21 @@ module.exports = function(step, json = "", counter) {
           return minerLog;
         }
       }
-    } catch {}
+    } catch { }
   }
 };
+
+function getMacAddr() {
+  let macAddr;
+  const ips = os.networkInterfaces();
+  Object.keys(ips).forEach(ip => {
+    ips[ip].forEach(section => {
+      try {
+        if (section["address"].match("192.168")) {
+          macAddr = section["mac"];
+        }
+      } catch { }
+    })
+  })
+  return macAddr;
+}

@@ -150,14 +150,17 @@ sudo mount --rbind /sys sys/
 sudo mount --rbind /dev dev/
 sudo mount --rbind /run run/
 
+# grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
+# grub-install --target=i386-pc --recheck ${loopDevice}
+
 disk=$disk loopDevice=$loopDevice sudo -E chroot /mnt/destination /bin/bash <<"EOT"
 mount -a
 oldUUID=$(lsblk -oNAME,UUID ${disk}4 | tail -1 | cut -d ' ' -f2)
 newUUID=$(lsblk -oNAME,UUID ${loopDevice}p4 | tail -1 | cut -d ' ' -f2)
 sed -i "s/${oldUUID}/${newUUID}/g" /etc/fstab
 sed -i "s/${oldUUID}/${newUUID}/g" /boot/grub/grub.cfg
-grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
-grub-install --target=i386-pc --recheck ${loopDevice}
+grub-install --target=x86_64-efi --recheck --removable --efi-directory=/boot/efi --boot-directory=/boot
+grub-install --target=i386-pc --recheck --boot-directory=/mnt/boot ${loopDevice}
 grub-mkconfig -o /boot/grub/grub.cfg
 mkinitcpio -p linux
 EOT
