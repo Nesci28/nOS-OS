@@ -69,6 +69,7 @@ W.I.P
 # Configuration
 ## SystemConfig.json
 - Use the same __Coin Name__ as in __CoinsConfig.json__
+- Miner is the name of the folder of the wanted Miner, ex: NoncerPro-OpenCL
 - __Serial number__ is used to let the rig know when there is an update coming from the WebApp, don't touch it.
 
 ## CoinsConfig.json
