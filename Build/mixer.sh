@@ -7,7 +7,6 @@ echo "${resolv}" >> /etc/resolv.conf
 pacman -Syy
 pacman -Syu --noconfirm
 pacman -Scc --noconfirm
-npm install -g localtunnel
 echo "" > /etc/resolv.conf
 EOT
 }
@@ -134,10 +133,11 @@ if [[ -z ${loopDevice} ]]; then
   read -p "Something went wrong, try to run \"sudo losetup -fP nOS.img\" manually" var
 fi
 
+sudo mkfs.fat -F32 ${loopDevice}p2
 yes Y | sudo mkfs.ext4 ${loopDevice}p4
-sudo dd if=${disk}1 of=${loopDevice}p1 bs=512 status=progress
-sudo dd if=${disk}2 of=${loopDevice}p2 bs=512 status=progress
-sudo dd if=${disk}3 of=${loopDevice}p3 bs=512 status=progress
+# sudo dd if=${disk}1 of=${loopDevice}p1 bs=512 status=progress
+# sudo dd if=${disk}2 of=${loopDevice}p2 bs=512 status=progress
+# sudo dd if=${disk}3 of=${loopDevice}p3 bs=512 status=progress
 
 sudo mkdir -p /mnt/source /mnt/destination
 sudo mount ${loopDevice}p4 /mnt/destination
@@ -150,8 +150,14 @@ sudo mount --rbind /sys sys/
 sudo mount --rbind /dev dev/
 sudo mount --rbind /run run/
 
+# Original
 # grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
 # grub-install --target=i386-pc --recheck ${loopDevice}
+
+# WIP
+# grub-install --target=x86_64-efi --recheck --removable --efi-directory=/boot/efi --boot-directory=/boot
+# grub-install --target=i386-pc --recheck --boot-directory=/mnt/boot ${loopDevice}
+
 
 disk=$disk loopDevice=$loopDevice sudo -E chroot /mnt/destination /bin/bash <<"EOT"
 mount -a
@@ -159,8 +165,8 @@ oldUUID=$(lsblk -oNAME,UUID ${disk}4 | tail -1 | cut -d ' ' -f2)
 newUUID=$(lsblk -oNAME,UUID ${loopDevice}p4 | tail -1 | cut -d ' ' -f2)
 sed -i "s/${oldUUID}/${newUUID}/g" /etc/fstab
 sed -i "s/${oldUUID}/${newUUID}/g" /boot/grub/grub.cfg
-grub-install --target=x86_64-efi --recheck --removable --efi-directory=/boot/efi --boot-directory=/boot
-grub-install --target=i386-pc --recheck --boot-directory=/mnt/boot ${loopDevice}
+grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB --removable
+grub-install --target=i386-pc --recheck ${loopDevice}
 grub-mkconfig -o /boot/grub/grub.cfg
 mkinitcpio -p linux
 EOT

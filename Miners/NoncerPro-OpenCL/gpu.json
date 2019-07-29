@@ -1,0 +1,8 @@
+[
+    {
+        "id": 0,
+        "key": "Ellesmere-4gb-32-1300",
+        "jobsPerBlock": 8,
+        "smem": 32
+    }
+]
