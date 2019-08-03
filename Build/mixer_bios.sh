@@ -51,6 +51,7 @@ sudo umount -l /mnt/USB
 sudo mount ${disk}1 /mnt/USB
 
 cd /mnt/USB/home/nos
+git reset --hard
 git pull origin master
 sudo rm -r .cache
 

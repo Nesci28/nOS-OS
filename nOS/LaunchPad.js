@@ -39,11 +39,12 @@ if (process.argv[process.argv.length - 1] == "init") {
     await checkXorg();
     await moveConfig();
     if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
-      network = await connection(
+      await connection(
         systemConfig["Wifi Name"],
         systemConfig["Wifi Password"]
       );
     }
+    console.log("pass connection");
     await clearDB();
     let counter = 0;
     await launchPad("init", counter);
@@ -262,23 +263,23 @@ async function stop() {
     for (let ID of pm2List) {
       try {
         cp.execSync(`kill ${ID} 2>&1 >/dev/null`);
-      } catch { }
+      } catch {}
     }
   }
 
   try {
     cp.execSync("tmux kill-session -t miner 2>&1 >/dev/null");
-  } catch { }
+  } catch {}
 }
 
 async function connection(ssid, password) {
-  require("dns").resolve("www.google.com", async function (err) {
+  await require("dns").resolve("www.google.com", async function(err) {
     if (err) {
-      console.log("No connection");
+      console.log("No connection, connecting...");
       await wifi.init({
-        iface: null // network interface, choose a random wifi interface if set to null
+        iface: null
       });
-      await wifi.connect({ ssid: ssid, password: password }, function (err) {
+      await wifi.connect({ ssid: ssid, password: password }, function(err) {
         if (err) {
           console.log(err);
         }
