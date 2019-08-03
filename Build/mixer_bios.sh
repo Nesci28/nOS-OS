@@ -132,68 +132,66 @@ sudo umount -l /mnt/destination
 sudo umount -l /mnt/ntfs
 sudo losetup -d ${loopDevice}
 
-# sudo shutdown -r now
+cd ~/Build/Image
 
-# cd ~/Build/Image
+for ((i = 0; i < 10; i++)); do
+  ID=$(gdrive list | grep "nOS.zip" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
+  if [[ ! -z ${ID} ]]; then
+    response=''
+    while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
+      response=$(gdrive delete ${ID})
+      sleep 1
+    done
+  fi
+done
+for ((i = 0; i < 10; i++)); do
+  ID=$(gdrive list | grep "nOS.zst" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
+  if [[ ! -z ${ID} ]]; then
+    response=''
+    while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
+      response=$(gdrive delete ${ID})
+      sleep 1
+    done
+  fi
+done
+echo -e "Done deleting the old version of nOS on the gdrive"
 
-# for ((i = 0; i < 10; i++)); do
-#   ID=$(gdrive list | grep "nOS.zip" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
-#   if [[ ! -z ${ID} ]]; then
-#     response=''
-#     while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
-#       response=$(gdrive delete ${ID})
-#       sleep 1
-#     done
-#   fi
-# done
-# for ((i = 0; i < 10; i++)); do
-#   ID=$(gdrive list | grep "nOS.zst" | tail -1 | sed 's/  */ /g' | cut -d ' ' -f1)
-#   if [[ ! -z ${ID} ]]; then
-#     response=''
-#     while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
-#       response=$(gdrive delete ${ID})
-#       sleep 1
-#     done
-#   fi
-# done
-# echo -e "Done deleting the old version of nOS on the gdrive"
+# sudo rm nOS.zst
+7z a nOS.zip nOS.img
+# zstdmt --long nOS.img -o nOS.zst
 
-# # sudo rm nOS.zst
-# 7z a nOS.zip nOS.img
-# # zstdmt --long nOS.img -o nOS.zst
+md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
 
-# md5hash=$(md5sum nOS.zip | sed 's/  */ /g' | cut -d ' ' -f1)
+response=''
+while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
+  response=$(gdrive upload nOS.zip)
+  sleep 1
+done
+echo -e "Done uploading the new version of nOS on the gdrive"
 
-# response=''
-# while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
-#   response=$(gdrive upload nOS.zip)
-#   sleep 1
-# done
-# echo -e "Done uploading the new version of nOS on the gdrive"
+ID=''
+while [[ -z ${ID} ]]; do
+  ID=$(gdrive list | grep "nOS.zip" | sed 's/  */ /g' | cut -d ' ' -f1)
+  sleep 1
+done
+echo -e "gdrive ID of the new version of nOS is : ${ID}"
 
-# ID=''
-# while [[ -z ${ID} ]]; do
-#   ID=$(gdrive list | grep "nOS.zip" | sed 's/  */ /g' | cut -d ' ' -f1)
-#   sleep 1
-# done
-# echo -e "gdrive ID of the new version of nOS is : ${ID}"
+response=''
+while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
+  response=$(gdrive share ${ID})
+  sleep 1
+done
+echo -e "new version is set to : Shared"
 
-# response=''
-# while [[ ${response} == *"Error 403"* || -z ${response} ]]; do
-#   response=$(gdrive share ${ID})
-#   sleep 1
-# done
-# echo -e "new version is set to : Shared"
+cd ~/Build
+node md5.js "https://drive.google.com/open?id=${ID}" "${md5hash}"
 
-# cd ~/Build
-# node md5.js "https://drive.google.com/open?id=${ID}" "${md5hash}"
+cd ~
+sed -i "/Download:/c\Download: [https://drive.google.com/open?id=${ID}](https://drive.google.com/open?id=${ID})  " README.md
+sed -i "/md5:/c\md5: ${md5hash}" README.md
 
-# cd ~
-# sed -i "/Download:/c\Download: [https://drive.google.com/open?id=${ID}](https://drive.google.com/open?id=${ID})  " README.md
-# sed -i "/md5:/c\md5: ${md5hash}" README.md
+git add README.md
+git commit -am "Auto-Update: Download link and md5 hash (from mixer)"
+git push origin master
 
-# git add README.md
-# git commit -am "Auto-Update: Download link and md5 hash (from mixer)"
-# git push origin master
-
-# sudo shutdown -r now
+sudo shutdown -r now
