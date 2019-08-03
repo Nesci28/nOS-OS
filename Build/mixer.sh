@@ -97,9 +97,8 @@ size=$(echo "(${size} + 0.6)" | scale=0 bc)
 cd ~/Build/Image
 fallocate -l ${size}G nOS.img
 sleep 5
-sudo gdisk nOS.img <<EOF
+sudo fdisk nOS.img <<EOF
 o
-Y
 n
 1
 
