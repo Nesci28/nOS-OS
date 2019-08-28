@@ -3,6 +3,7 @@ const cp = require("child_process");
 const readLastLines = require("read-last-lines");
 
 const getInfo = require("./getInfo.js");
+const restart = require("./restart");
 
 if (process.argv[process.argv.length - 1] == "help") {
   console.log("help   : shows this commands list\n");
@@ -28,11 +29,7 @@ if (process.argv[process.argv.length - 1] == "stop") {
 
 if (process.argv[process.argv.length - 1] == "start") {
   console.log("Turning ON nOS");
-  kill();
-  const startOutput = start();
-  startOutput.stdout.on("data", function (data) {
-    console.log(data.toString());
-  });
+  restart();
 }
 
 if (process.argv[process.argv.length - 1] == "miner") {

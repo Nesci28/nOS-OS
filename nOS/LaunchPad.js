@@ -15,6 +15,7 @@ const prettyjsonOptions = {
 };
 
 // Requirements
+const restart = require("./restart.js");
 let info = require("./getInfo.js");
 let powerControl = require("./PowerController.js");
 let ocControl = require("./OverclockController.js");
@@ -36,6 +37,7 @@ if (process.argv[process.argv.length - 1] == "stop") {
 
 if (process.argv[process.argv.length - 1] == "init") {
   (async () => {
+    restart();
     await checkXorg();
     await moveConfig();
     if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
@@ -382,6 +384,9 @@ function checkXorg() {
       .execSync("nvidia-smi --query-gpu=gpu_name --format=noheader,csv | wc -l")
       .toString()
       .trim();
+    if (!fs.existsSync("./Data")) {
+      fs.mkdirSync("./Data");
+    }
     if (fs.existsSync("./Data/Init.txt")) {
       var fileExists = true;
     } else {

@@ -9,6 +9,7 @@ module.exports = function (step, json = "", counter) {
   const nvidiaGPU = require("./helpers/gpu.js");
   const amdGPU = require("./helpers/amd_rocm_parser.js");
   const amdTweak = require("./helpers/amd_mem_tweak_parser.js");
+  const restart = require("./restart");
 
   // Parsers
   const systemConfig = require("../SystemConfig.json");
@@ -84,40 +85,34 @@ module.exports = function (step, json = "", counter) {
     json["Old Time"] = json["New Time"];
     json["New Time"] = new Date().getTime();
     json["Runtime"] = json["New Time"] - json["Runtime Start"];
-    //if (counter == 0 || counter == 480) {
-    //  let localHash = async () => {
-    //    let res = await simpleGit.revparse(["HEAD"]);
-    //    return res.trim();
-    //#  };
-    //#  json["Local GitHash"] = await localHash();
+    if (counter == 0 || counter == 480) {
+      let localHash = async () => {
+        let res = await simpleGit.revparse(["HEAD"]);
+        return res.trim();
+      };
+      json["Local GitHash"] = await localHash();
 
-    //#  let remoteHash = async () => {
-    //#    let res = await simpleGit.listRemote(["--heads"]);
-    //#    return res.split("\t")[0];
-    //#  };
-    //#  json["Remote GitHash"] = await remoteHash();
+      let remoteHash = async () => {
+        let res = await simpleGit.listRemote(["--heads"]);
+        return res.split("\t")[0];
+      };
+      json["Remote GitHash"] = await remoteHash();
 
-    //#  if (json["Local GitHash"] !== json["Remote GitHash"]) {
-    //#    console.log("Updating nOS to the lastest version... Please wait.");
-    //#    console.log("nOS will automatically restart afterward.");
-    //#    await simpleGit.pull("origin", "master");
-    //#    fs.writeFileSync(
-    //#      "../Logs/History.txt",
-    //#      new Date().getTime() +
-    //#      " Updated nOS to the latest Version. " +
-    //#      json["Remote GitHash"]
-    //#    );
-    //#    console.log("Updated nOS to the latest Version.");
-    //#    let cd = cp
-    //#      .execSync("find /home -type d -name nOS 2>/dev/null")
-    //#      .toString();
-    //#    const start = cp.spawn(`./${cd}/start.sh`);
-    //#    start.stdout.on("data", function (data) {
-    //#      console.log(data.toString());
-    //#    });
-    //    process.exit();
-    //#  }
-    //}
+      if (json["Local GitHash"] !== json["Remote GitHash"]) {
+        console.log("Updating nOS to the lastest version... Please wait.");
+        console.log("nOS will automatically restart afterward.");
+        await simpleGit.pull("origin", "master");
+        fs.writeFileSync(
+          "../Logs/History.txt",
+          new Date().getTime() +
+          " Updated nOS to the latest Version. " +
+          json["Remote GitHash"]
+        );
+        console.log("Updated nOS to the latest Version.");
+        
+        restart()
+      }
+    }
 
     if (systemConfig["Nvidia Coin"] && setType[0]) {
       if (step == "init" || step == "ssh") await getCoins("Nvidia");
