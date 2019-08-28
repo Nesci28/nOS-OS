@@ -108,29 +108,18 @@ module.exports = async function(json, step, powerStatus = "") {
   }
 
   function checkCurrent(json, gpuNumber, brand) {
-    let maxFanSpeed = ocSettings[brand]["Max FanSpeed"];
     let ocSettingMax = ocSettings[brand]["Max Temperature"] + 3;
     let wattCommand = "";
 
     for (var i = 0; i < gpuNumber; i++) {
       let nextWatt;
-      let currentFanSpeed;
-      let minWatt;
       let amdGpuID;
-
-      if (brand == "Nvidia") {
-        currentFanSpeed = Number(
-          json[brand]["GPU"][i]["Fan Speed"].replace(/\D/g, "")
-        );
-        minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].replace(/ W/, ""));
-      }
-      if (brand == "Amd") {
-        currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"];
-        minWatt = json[brand]["GPU"][i]["Min Watt"];
-      }
       let currentTemp = json[brand]["GPU"][i]["Temperature"];
 
-      if (currentFanSpeed >= maxFanSpeed && currentTemp > ocSettingMax) {
+      currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"].toString().includes("Max")
+      minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].toString().replace(/ W/g, ""));
+
+      if (currentFanSpeed && currentTemp > ocSettingMax) {
         if (brand == "Nvidia") {
           nextWatt = json[brand]["GPU"][i]["Watt"].split(".")[0] - 5;
           if (nextWatt >= minWatt) {

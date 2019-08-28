@@ -44,7 +44,6 @@ if (process.argv[process.argv.length - 1] == "init") {
         systemConfig["Wifi Password"]
       );
     }
-    console.log("pass connection");
     await clearDB();
     let counter = 0;
     await launchPad("init", counter);
@@ -122,7 +121,7 @@ async function launchPad(
     } else {
       console.log("[3/4] Checking Watchdog");
     }
-    watch = await watchdog(json, step);
+    watch = await watchdog(json, step, watch);
   }
 
   if (counter == 60) {
@@ -155,6 +154,7 @@ async function launchPad(
       console.log(prettyjson.render(overclocks, prettyjsonOptions));
     }
     console.log(prettyjson.render(temperature, prettyjsonOptions));
+    console.log(prettyjson.render(watch, prettyjsonOptions));
   }
 
   if (json.Nvidia.GPU.length > 0 && json.Amd.GPU.length == 0) {
@@ -175,6 +175,10 @@ async function launchPad(
     let temperatureNvidia = cloneDeep(temperature);
     delete temperatureNvidia.Temperature.Amd;
     console.log(prettyjson.render(temperatureNvidia, prettyjsonOptions));
+
+    let watchdogNvidia = cloneDeep(watch);
+    delete watchdogNvidia.Watchdog.Amd;
+    console.log(prettyjson.render(watchdogNvidia, prettyjsonOptions));
   }
 
   if (json.Nvidia.GPU.length == 0 && json.Amd.GPU.length > 0) {
@@ -195,6 +199,10 @@ async function launchPad(
     let temperatureAmd = cloneDeep(temperature);
     delete temperatureAmd.Temperature.Nvidia;
     console.log(prettyjson.render(temperatureAmd, prettyjsonOptions));
+    
+    let watchdogAmd = cloneDeep(watch);
+    delete watchdogAmd.Watchdog.Nvidia;
+    console.log(prettyjson.render(watchdogAmd, prettyjsonOptions));
   }
 
   console.log(prettyjson.render(shell, prettyjsonOptions));
@@ -366,7 +374,7 @@ function checkXorg() {
   if (/NVIDIA/.test(lspci)) {
     xorgNumber = cp
       .execSync(
-        'cat /etc/X11/xorg.conf | grep \'Option         "Coolbits" "28"\' | wc -l'
+        'cat /etc/X11/mhwd.d/nvidia.conf | grep \'Option         "Coolbits" "28"\' | wc -l'
       )
       .toString()
       .trim();
@@ -383,7 +391,7 @@ function checkXorg() {
 
     if (xorgNumber !== gpuNumber || !fileExists) {
       cp.execSync(
-        "sudo nvidia-xconfig -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration"
+        "sudo nvidia-xconfig -c /etc/X11/mhwd.d/nvidia.conf -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration"
       );
       let command = "sudo nvidia-settings ";
       for (let i = 0; i < gpuNumber; i++) {

@@ -97,29 +97,57 @@ module.exports = async function(json, step, overclockStatus = "") {
       var amdCommand = "";
 
       if (step == "rxboost") {
-        // Setting the performance to MANUAL
-        amdIDS.forEach(id => {
-          amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi ";
-          amdCommand += `-d ${id} `;
-          amdCommand += `--setperflevel manual `;
-          cp.execSync(`sudo ${amdCommand}`);
+        // ROCM_SMI
+        // // Setting the performance to MANUAL
+        // amdIDS.forEach(id => {
+        //   amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi ";
+        //   amdCommand += `-d ${id} `;
+        //   amdCommand += `--setperflevel manual `;
+        //   cp.execSync(`sudo ${amdCommand}`);
+        // });
+
+        // // Setting the Mem overdrive %
+        // amdIDS.forEach((id, index) => {
+        //   overclocksStatus["Overclocks"]["Amd"]["Mem"][index] =
+        //     ocSettings.Amd.Mem_overdrive;
+        //   amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi ";
+        //   amdCommand += `-d ${id} `;
+        //   amdCommand += `--setmemoverdrive ${ocSettings.Amd.Mem_overdrive} `;
+        //   amdCommand += "--autorespond Y";
+        //   cp.execSync(`sudo ${amdCommand} 2>/dev/null`);
+        // });
+
+        // MY OWN WAY
+        // Getting the list of the files to overclock
+        let amdGpuFiles = cp.execSync('find / -name pp_od_clk_voltage 2>&1 | grep -v "Permission denied"').toString().trim();
+        amdGpuFiles = amdGpuFiles.split('\n');
+        
+        // Making sure to reset the gpu to not over-overclock them
+        amdGpuFiles.forEach(file => {
+          cp.execSync(`sudo sh -c "echo 'r' > ${file}"`);
         });
 
-        // Setting the Mem overdrive %
-        amdIDS.forEach(id => {
-          overclocksStatus["Overclocks"]["Amd"]["Mem"][id] =
-            ocSettings.Amd.Mem_overdrive;
-          amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi ";
-          amdCommand += `-d ${id} `;
-          amdCommand += `--setmemoverdrive ${ocSettings.Amd.Mem_overdrive} `;
-          amdCommand += "--autorespond Y";
-          cp.execSync(`sudo ${amdCommand} 2>/dev/null`);
+        // Overclocking the GPUs
+        amdGpuFiles.forEach((file, index) => {
+          let pstatesValues = cp.execSync(`cat ${file}`).toString().trim();
+          pstatesValues = pstatesValues.split('\n')[12]
+          pstatesValues = pstatesValues.replace(/\s\s+/g, ' ').split(' ');
+          
+          oldMemClock = pstatesValues[1].replace(/[a-zA-Z]/g, '');
+          voltage = pstatesValues[2].replace(/[a-zA-Z]/g, '');
+          overclockValue = ocSettings.Amd["Mem_overdrive"] / 100;
+          newValue = Math.round(oldMemClock * (1 + overclockValue));
+
+          overclocksStatus["Overclocks"]["Amd"]["Mem"][index] = newValue;
+      
+          cp.execSync(`sudo sh -c "echo 'm 2 ${newValue} ${voltage}' > ${file}"`);
+          cp.execSync(`sudo sh -c "echo 'c' > ${file}"`);
         });
 
         // Setting the REF value
         amdCommand = "~/nOS/helpers/amdmemtweak ";
         amdIDS.forEach((id, index) => {
-          overclocksStatus["Overclocks"]["Amd"]["REF"][id] =
+          overclocksStatus["Overclocks"]["Amd"]["REF"][index] =
             ocSettings.Amd.Rxboost;
           if (index == 0 && amdIDS.length == 1) {
             amdCommand += `--i ${id} `;
@@ -136,8 +164,8 @@ module.exports = async function(json, step, overclockStatus = "") {
       }
 
       if (step == "stop") {
-        amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi --resetclocks";
-        cp.execSync(`sudo ${amdCommand}`);
+        //amdCommand = "~/nOS/helpers/ROC-smi/rocm-smi --resetclocks";
+        //cp.execSync(`sudo ${amdCommand}`);
         amdCommand =
           "~/nOS/helpers/ROC-smi/rocm-smi --resetpoweroverdrive --autorespond Y";
         cp.execSync(`sudo ${amdCommand}`);
