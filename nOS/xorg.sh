@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if [[ $(lspci | grep VGA | tail -1) == *"NVIDIA"*  ]]; then
+if [[ $(lspci | grep VGA | head -1) == *"NVIDIA"*  ]]; then
 	if [[ -f /etc/X11/xorg.conf.bck  ]]; then
 		sudo mv /etc/X11/xorg.conf.bck /etc/X11/xorg.conf
 	fi
