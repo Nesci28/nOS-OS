@@ -186,7 +186,7 @@ async function launchPad(
 
     if (json.Nvidia.GPU.length == 0 && json.Amd.GPU.length > 0) {
         let coinAmd = cloneDeep(coin);
-        delete coinAmd.Coins.Amd;
+        delete coinAmd.Coins.Nvidia;
         console.log(prettyjson.render(coinAmd, prettyjsonOptions));
 
         let powerAmd = cloneDeep(power);
