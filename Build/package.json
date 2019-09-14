@@ -6,7 +6,7 @@
   "dependencies": {
     "cryptr": "^4.0.2",
     "fs": "^0.0.1-security",
-    "monk": "^6.0.6"
+    "monk": "^7.0.0"
   },
   "devDependencies": {},
   "scripts": {
