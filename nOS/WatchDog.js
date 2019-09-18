@@ -53,15 +53,35 @@ module.exports = async function(json, step, watchdogStatus) {
     if (watchdogStatus["Watchdog"]["Nvidia"]["Mem"] == "Initializing") watchdogStatus["Watchdog"]["Nvidia"]["Mem"] = 0;
     if (watchdogStatus["Watchdog"]["Amd"]["Mem"] == "Initializing") watchdogStatus["Watchdog"]["Amd"]["Mem"] = 0;
 
-    if (json.Runtime >= 1000 * 60 * 10) {
-      if (systemConfig["Watchdog Temp"]) await getTemp(json);      
+    if (systemConfig["Watchdog Temp"]) {
+      if (json.Runtime >= 1000 * 60 * 10) {
+        await getTemp(json);
+      } else {
+        watchdogStatus["Watchdog"]["Nvidia"]["Temperature"][0] = `Stabilizing temperature: ${((1000 * 60 * 10 - json.Runtime) / 1000 / 60).toFixed(2)} mins left`
+        watchdogStatus["Watchdog"]["Amd"]["Temperature"][0] = `Stabilizing temperature: ${((1000 * 60 * 10 - json.Runtime) / 1000 / 60).toFixed(2)} mins left`
+      }
     } else {
-      watchdogStatus["Watchdog"]["Nvidia"]["Temperature"][0] = `Stabilizing temperature: ${((1000 * 60 * 10 - json.Runtime) / 1000 / 60).toFixed(2)} mins left`
-      watchdogStatus["Watchdog"]["Amd"]["Temperature"][0] = `Stabilizing temperature: ${((1000 * 60 * 10 - json.Runtime) / 1000 / 60).toFixed(2)} mins left`
+      watchdogStatus["Watchdog"]["Nvidia"]["Temperature"][0] = "WatchDog Temperature: disabled"
+      watchdogStatus["Watchdog"]["Amd"]["Temperature"][0] = "WatchDog Temperature: disabled"
     }
-    if (systemConfig["Watchdog Mem"]) await getMemClock(json)
-    if (systemConfig["Watchdog Core"]) await getCoreClock(json)
-    if (systemConfig["Watchdog Util"]) await getUtilization(json)
+    if (systemConfig["Watchdog Mem"]) {
+      await getMemClock(json);
+    } else {
+      watchdogStatus["Watchdog"]["Nvidia"]["Mem"][0] = "WatchDog Memory: disabled"
+      watchdogStatus["Watchdog"]["Amd"]["Mem"][0] = "WatchDog Memory: disabled"
+    }
+    if (systemConfig["Watchdog Core"]) {
+      await getCoreClock(json);
+    } else {
+      watchdogStatus["Watchdog"]["Nvidia"]["Core"][0] = "WatchDog Core: disabled"
+      watchdogStatus["Watchdog"]["Amd"]["Core"][0] = "WatchDog Core: disabled"
+    }
+    if (systemConfig["Watchdog Util"]) {
+      await getUtilization(json);
+    } else {
+      watchdogStatus["Watchdog"]["Nvidia"]["Utilization"][0] = "WatchDog Utilization: disabled"
+      watchdogStatus["Watchdog"]["Amd"]["Utilization"][0] = "WatchDog Utilization: disabled"
+    }
   }
   return watchdogStatus
 

@@ -109,7 +109,6 @@ module.exports = function (step, json = "", counter) {
           json["Remote GitHash"]
         );
         console.log("Updated nOS to the latest Version.");
-        
         restart()
       }
     }

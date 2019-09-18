@@ -4,6 +4,8 @@ const cp = require("child_process");
 const axios = require("axios");
 const monk = require("monk");
 
+const restart = require('./restart');
+
 module.exports = async function(json, existingDB = "") {
   // Exporting DB information
   let sendToDBStatus = {
@@ -14,9 +16,10 @@ module.exports = async function(json, existingDB = "") {
   };
   // let urlGet = "http://localhost:5000/db"
   // let urlPost = "http://localhost:5000/rig/add"
-  const urlGet = "https://nos-server.now.sh/db";
-  const urlPost = "https://nos-server.now.sh/rig/add";
-  const urlPostAlternative = "https://node-nos.herokuapp.com/api/v2/rig/add";
+  // const urlGet = "https://node-nos.herokuapp.com/api/v2/db";
+  const urlGet = "https://node-nos.herokuapp.com/api/v2/db"
+  const urlPostAlternative = "https://nos-server.now.sh/rig/add";
+  const urlPost = "https://node-nos.herokuapp.com/api/v2/rig/add";
 
   if (existingDB == "") {
     existingDB = await axios.post(urlGet, {
@@ -28,8 +31,15 @@ module.exports = async function(json, existingDB = "") {
     if (existingDB != "New rig detected!") existingDB = [existingDB];
   }
 
-  await checkForNewConfigs(existingDB, json);
-  await checkForExternalCommand(existingDB, json);
+  let entries = await axios.get(urlGet, { params: {
+    username: json.Username,
+    password: json.Password,
+    hostname: json.Hostname
+  }
+  });
+  entries = entries.data;
+  await checkForNewConfigs(entries, json);
+  await checkForExternalCommand(entries, json);
   sendToDBStatus["DB"]["Entry"] = existingDB;
   let setStatus = await setID(existingDB, json);
   sendToDBStatus["DB"]["Status"] = setStatus.status;
@@ -43,8 +53,8 @@ module.exports = async function(json, existingDB = "") {
   }
 
   async function checkForExternalCommand(existingDB, json) {
-    if (existingDB.length > 0) {
-      let externalCommand = existingDB[0]["External Command"];
+    if (existingDB != "New rig detected!") {
+      let externalCommand = existingDB["External Command"];
       if (externalCommand) {
         json["External Command"] = "";
         try {
@@ -52,7 +62,11 @@ module.exports = async function(json, existingDB = "") {
         } catch {
           await axios.post(urlPostAlternative, json);
         } finally {
-          cp.execSync(`${externalCommand}`);
+          if (externalCommand === 'restart') {
+            restart();
+          } else {
+            cp.exec(`${externalCommand}`);
+          }
         }
       }
     }
@@ -60,18 +74,20 @@ module.exports = async function(json, existingDB = "") {
 
   function checkForNewConfigs(existingDB, json) {
     if (existingDB != "New rig detected!") {
-      let systemSerial = existingDB[0]["System Config"].Serial;
-      if (systemSerial > json["System Config"].Serial) {
-        copy("SystemConfig.json", existingDB[0]["System Config"]);
-      }
-      let coinsSerial = existingDB[0]["Coins Config"].Serial;
-      if (coinsSerial > json["Coins Config"].Serial) {
-        copy("CoinsConfig.json", existingDB[0]["Coins Config"]);
-      }
-      let overclocksSerial = existingDB[0]["Overclocks Config"].Serial;
-      if (overclocksSerial > json["Overclocks Config"].Serial) {
-        copy("Overclocks.json", existingDB[0]["Overclocks Config"]);
-      }
+      try {
+        let systemSerial = existingDB["System Config"].Serial;
+        if (systemSerial > json["System Config"].Serial) {
+          copy("SystemConfig.json", existingDB["System Config"]);
+        }
+        let coinsSerial = existingDB["Coins Config"].Serial;
+        if (coinsSerial > json["Coins Config"].Serial) {
+          copy("CoinsConfig.json", existingDB["Coins Config"]);
+        }
+        let overclocksSerial = existingDB["Overclocks Config"].Serial;
+        if (overclocksSerial > json["Overclocks Config"].Serial) {
+          copy("Overclocks.json", existingDB["Overclocks Config"]);
+        }
+      } catch {}
     }
 
     function copy(config, newValues) {
