@@ -98,7 +98,9 @@ async function launchPad(
     console.log("[7/9] Setting up tmux");
     cp.exec("./tmux.sh && exit &");
     console.log("[8/9] Sending the newest values to the WebUI");
-    database = await DB(json, "");
+    try {
+      database = await DB(json, "");
+    } catch {}
     console.log("[9/9] Starting Watchdog");
     watch = await watchdog(json, step);
   }
@@ -146,7 +148,9 @@ async function launchPad(
     } else {
       console.log("[4/4] Sending the newest values to the WebUI");
     }
-    database = await DB(json, existingDB);
+    try {
+      database = await DB(json, existingDB);
+    } catch {}
   }
 
   process.stdout.write("\033c");
