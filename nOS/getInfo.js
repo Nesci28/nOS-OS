@@ -158,7 +158,7 @@ module.exports = function (step, json = "", counter) {
           gpuObject["Mem Clock"] = gpu[2];
           gpuObject["Max Mem"] = gpu[10];
           gpuObject["Temperature"] = gpu[3];
-          gpuObject["Watt"] = gpu[4];
+          gpuObject["Watt"] = gpu[13];
           gpuObject["Min Watt"] = gpu[11];
           gpuObject["Max Watt"] = gpu[12];
           gpuObject["Fan Speed"] = gpu[5];

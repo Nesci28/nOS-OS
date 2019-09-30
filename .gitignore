@@ -47,3 +47,6 @@ SystemConfig.json
 Init.txt
 .dmrc
 .gitconfig
+Build/aurPackages.txt
+
+Build/packages.txt

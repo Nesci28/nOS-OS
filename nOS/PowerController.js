@@ -108,7 +108,8 @@ module.exports = async function(json, step, powerStatus = "") {
   }
 
   function checkCurrent(json, gpuNumber, brand) {
-    let ocSettingMax = ocSettings[brand]["Max Temperature"] + 3;
+    let ocSettingMaxTemp = ocSettings[brand]["Max Temperature"] + 3;
+    const ocSettingMaxFan = ocSettings[brand]["Max FanSpeed"];
     let wattCommand = "";
 
     for (var i = 0; i < gpuNumber; i++) {
@@ -116,13 +117,14 @@ module.exports = async function(json, step, powerStatus = "") {
       let amdGpuID;
       let currentTemp = json[brand]["GPU"][i]["Temperature"];
 
-      currentFanSpeed = json[brand]["GPU"][i]["Fan Speed"].toString().includes("Max")
+      currentFanSpeed = parseInt(json[brand]["GPU"][i]["Fan Speed"].toString().replace(/\D/g, ""));
       minWatt = parseInt(json[brand]["GPU"][i]["Min Watt"].toString().replace(/ W/g, ""));
 
-      if (currentFanSpeed && currentTemp > ocSettingMax) {
+      if (currentFanSpeed >= ocSettingMaxFan && currentTemp > ocSettingMaxTemp) {
         if (brand == "Nvidia") {
           nextWatt = json[brand]["GPU"][i]["Watt"].split(".")[0] - 5;
           if (nextWatt >= minWatt) {
+            console.log(`Adjusting Wattage on ${brand}-${i} to ${nextWatt}`);
             wattCommand += `sudo nvidia-smi -i ${i} -pl ${nextWatt}; `;
           }
         }
@@ -130,6 +132,7 @@ module.exports = async function(json, step, powerStatus = "") {
           nextWatt = Math.round(json[brand]["GPU"][i]["Watt"]) - 5;
           if (nextWatt >= minWatt) {
             amdGpuID = json[brand]["GPU"][i]["ID"];
+            console.log(`Adjusting Wattage on ${brand}-${amdGpuID} to ${nextWatt}`);
             wattCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setpoweroverdrive ${nextWatt} --autorespond yes; `;
           }
         }

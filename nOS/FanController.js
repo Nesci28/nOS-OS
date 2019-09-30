@@ -38,15 +38,18 @@ module.exports = async function(json, step) {
   function initialize(infos, gpuNumber, brand) {
     temperatureStatus["Temperature"][brand] = "Initializing" 
     let initCommand = ''
-
+    let fanSpeed = 80;
+    if (ocSettings[brand]["Max FanSpeed"] < 80) {
+      fanSpeed = ocSettings[brand]["Max FanSpeed"];
+    }
     for (let i = 0; i < gpuNumber; i++) {
       if (brand == "Nvidia") {
         if (initCommand == '') initCommand += 'sudo nvidia-settings '
-        initCommand += '-a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=80 '
+        initCommand += '-a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=' + fanSpeed + '; '
       }
       if (brand == "Amd") {
         let amdGpuID = infos[brand]["GPU"][i]["ID"]
-        initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setfan 80%; `
+        initCommand += `sudo ./helpers/ROC-smi/rocm-smi -d ${amdGpuID} --setfan ${fanSpeed}%; `
       }
     }
     if (initCommand) cp.execSync(initCommand)
@@ -94,7 +97,11 @@ module.exports = async function(json, step) {
           currentFanSpeed = infos[brand]["GPU"][i]["Fan Speed"]
           var amdGpuID = infos[brand]["GPU"][i]["ID"]
         }
-        
+        if (currentFanSpeed >= ocSettings[brand]["Max FanSpeed"]) {
+          gpuTemperature[i] = `${currentFanSpeed} Max`;
+        } else {
+          gpuTemperature[i] = currentFanSpeed;
+        }
         if (infos[brand]["GPU"][i.toString()]["Temperature"] < minTemperature) {
           if (currentFanSpeed >= 21) { 
             if (brand == "Nvidia") {

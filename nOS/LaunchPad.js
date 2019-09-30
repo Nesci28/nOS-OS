@@ -397,6 +397,12 @@ function checkXorg() {
     } else {
       var fileExists = false;
       fs.writeFileSync("./Data/Init.txt", "");
+      console.log('Deleting the NTFS partition and resizing root to fullsize.')
+      let disk = cp.execSync("lsblk | grep /ntfs | sed 's/  */ /g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g'").toString().trim();
+      disk = disk.replace(/\d/g, '');      
+      cp.execSync(`sudo umount /ntfs`)
+      cp.execSync(`sudo parted /dev/${disk} rm 2`);
+      cp.execSync(`sudo growpart /dev/${disk} 1`);
     }
 
     if (xorgNumber !== gpuNumber || !fileExists) {
