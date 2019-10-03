@@ -98,9 +98,7 @@ module.exports = function (step, json = "", counter) {
       };
       json["Remote GitHash"] = await remoteHash();
 
-      console.log(json["Local GitHash"], json["Remote GitHash"])
-
-      if (json["Local GitHash"] !== json["Remote GitHash"]) {
+      if (json["Local GitHash"].replace(/[\n\t\r]/g,"") !== json["Remote GitHash"].replace(/[\n\t\r]/g,"")) {
         console.log("Updating nOS to the lastest version... Please wait.");
         console.log("nOS will automatically restart afterward.");
         await simpleGit.pull("origin", "master");
