@@ -94,9 +94,11 @@ module.exports = function (step, json = "", counter) {
 
       let remoteHash = async () => {
         let res = await simpleGit.listRemote(["--heads"]);
-        return res.split("\t")[0];
+        return res.split('refs/heads/master')[0];
       };
       json["Remote GitHash"] = await remoteHash();
+
+      console.log(json["Local GitHash"], json["Remote GitHash"])
 
       if (json["Local GitHash"] !== json["Remote GitHash"]) {
         console.log("Updating nOS to the lastest version... Please wait.");

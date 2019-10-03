@@ -381,7 +381,7 @@ function checkXorg() {
   if (/NVIDIA/.test(lspci)) {
     xorgNumber = cp
       .execSync(
-        'cat /etc/X11/mhwd.d/nvidia.conf | grep \'Option         "Coolbits" "28"\' | wc -l'
+        'cat /etc/X11/xorg.conf | grep \'Option         "Coolbits" "28"\' | wc -l'
       )
       .toString()
       .trim();
@@ -399,15 +399,17 @@ function checkXorg() {
       fs.writeFileSync("./Data/Init.txt", "");
       console.log('Deleting the NTFS partition and resizing root to fullsize.')
       let disk = cp.execSync("lsblk | grep /ntfs | sed 's/  */ /g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g'").toString().trim();
-      disk = disk.replace(/\d/g, '');      
-      cp.execSync(`sudo umount /ntfs`)
-      cp.execSync(`sudo parted /dev/${disk} rm 2`);
-      cp.execSync(`sudo growpart /dev/${disk} 1`);
+      if (disk) {
+	disk = disk.replace(/\d/g, '');      
+        cp.execSync(`sudo umount /ntfs`)
+        cp.execSync(`sudo parted /dev/${disk} rm 2`);
+        cp.execSync(`sudo growpart /dev/${disk} 1`);
+      }
     }
 
     if (xorgNumber !== gpuNumber || !fileExists) {
       cp.execSync(
-        "sudo nvidia-xconfig -c /etc/X11/mhwd.d/nvidia.conf -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration"
+        "sudo nvidia-xconfig -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration"
       );
       let command = "sudo nvidia-settings ";
       for (let i = 0; i < gpuNumber; i++) {
