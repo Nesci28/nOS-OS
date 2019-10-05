@@ -402,8 +402,8 @@ function checkXorg() {
       if (disk) {
 	disk = disk.replace(/\d/g, '');      
         cp.execSync(`sudo umount /ntfs`)
-        cp.execSync(`sudo parted /dev/${disk} rm 2`);
-        cp.execSync(`sudo growpart /dev/${disk} 1`);
+        cp.execSync(`sudo parted /dev/${disk} rm 4`);
+        cp.execSync(`sudo growpart /dev/${disk} 3`);
       }
     }
 

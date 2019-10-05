@@ -52,3 +52,6 @@ Build/aurPackages.txt
 Build/packages.txt
 .face
 .fehbg
+Build/nOS.gz
+Downloads/
+*test*

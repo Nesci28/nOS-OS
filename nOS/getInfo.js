@@ -94,9 +94,18 @@ module.exports = function (step, json = "", counter) {
 
       let remoteHash = async () => {
         let res = await simpleGit.listRemote(["--heads"]);
-        return res.split('refs/heads/master')[0];
-      };
+        res = res.replace(/\t/g, ' ').split('\n');
+        for (const hash of res) {
+          if (hash.includes('refs/heads/master')) {
+            res = hash.split(' ')[0];
+            break;
+          }
+        }
+        return res;
+      }
       json["Remote GitHash"] = await remoteHash();
+
+      console.log(json["Local GitHash"].replace(/[\n\t\r]/g,""), json["Remote GitHash"].replace(/[\n\t\r]/g,""))
 
       if (json["Local GitHash"].replace(/[\n\t\r]/g,"") !== json["Remote GitHash"].replace(/[\n\t\r]/g,"")) {
         console.log("Updating nOS to the lastest version... Please wait.");
@@ -172,9 +181,9 @@ module.exports = function (step, json = "", counter) {
       json["Amd"]["GPU"] = [];
       let amdRocm = cp.execSync("./helpers/ROC-smi/rocm-smi");
       let amdStats = amdGPU(amdRocm.toString());
-      let amdMem = await amdTweak(
-        cp.execSync("sudo ./helpers/amdmemtweak --current").toString()
-      );
+      // let amdMem = await amdTweak(
+      //   cp.execSync("sudo ./helpers/amdmemtweak --current").toString()
+      // );
       let amdName = cp
         .execSync(
           "sudo ./helpers/amdmeminfo -q -s | cut -d ':' -f3 | sed 's/Radeon //g'"
@@ -193,7 +202,7 @@ module.exports = function (step, json = "", counter) {
         gpuObject["Fan Speed"] = amdStats["gpus"][i]["fan"];
         gpuObject["Max Watt"] = amdStats["gpus"][i]["maxwatt"];
         gpuObject["Min Watt"] = Math.round(gpuObject["Max Watt"] / 2);
-        gpuObject["Memory Timings"] = amdMem[i];
+        // gpuObject["Memory Timings"] = amdMem[i];
         gpuObject["Name"] = amdName[i];
         // gpuObject["Name"] = amdStats["gpus"][i][7]
         json["Amd"]["GPU"].push(gpuObject);
