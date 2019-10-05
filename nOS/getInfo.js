@@ -181,9 +181,9 @@ module.exports = function (step, json = "", counter) {
       json["Amd"]["GPU"] = [];
       let amdRocm = cp.execSync("./helpers/ROC-smi/rocm-smi");
       let amdStats = amdGPU(amdRocm.toString());
-      // let amdMem = await amdTweak(
-      //   cp.execSync("sudo ./helpers/amdmemtweak --current").toString()
-      // );
+      let amdMem = await amdTweak(
+        cp.execSync("sudo ./helpers/amdmemtweak --current").toString()
+      );
       let amdName = cp
         .execSync(
           "sudo ./helpers/amdmeminfo -q -s | cut -d ':' -f3 | sed 's/Radeon //g'"
@@ -202,7 +202,7 @@ module.exports = function (step, json = "", counter) {
         gpuObject["Fan Speed"] = amdStats["gpus"][i]["fan"];
         gpuObject["Max Watt"] = amdStats["gpus"][i]["maxwatt"];
         gpuObject["Min Watt"] = Math.round(gpuObject["Max Watt"] / 2);
-        // gpuObject["Memory Timings"] = amdMem[i];
+        gpuObject["Memory Timings"] = amdMem[i];
         gpuObject["Name"] = amdName[i];
         // gpuObject["Name"] = amdStats["gpus"][i][7]
         json["Amd"]["GPU"].push(gpuObject);
