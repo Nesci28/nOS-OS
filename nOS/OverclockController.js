@@ -41,14 +41,14 @@ module.exports = async function (json, step, overclockStatus = "") {
                   continue;
                 }
               }
-              if (hiveOC && ocCommand == "") ocCommand += "nvidia-settings ";
+              if (hiveOC && ocCommand == "") ocCommand += " ";
               if (hiveOC.core_clock) {
-                ocCommand += `-c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=${hiveOC.core_clock}" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=${hiveOC.core_clock}" `;
+                ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=${hiveOC.core_clock}" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=${hiveOC.core_clock}"; `;
                 overclocksStatus["Overclocks"]["Nvidia"]["Core"][i] =
                   hiveOC.core_clock;
               }
               if (hiveOC.mem_clock) {
-                ocCommand += `-c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[3]=${hiveOC.mem_clock}" -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[2]=${hiveOC.mem_clock}" `;
+                ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[3]=${hiveOC.mem_clock}" -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[2]=${hiveOC.mem_clock}"; `;
                 overclocksStatus["Overclocks"]["Nvidia"]["Mem"][i] =
                   hiveOC.mem_clock;
               }
@@ -62,16 +62,15 @@ module.exports = async function (json, step, overclockStatus = "") {
         }
 
         if (step == "stop") {
-          ocCommand += "nvidia-settings ";
           for (let i = 0; i < json.Nvidia.GPU.length; i++) {
-            ocCommand += `-c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=0" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=0" `;
-            ocCommand += `-c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[3]=0" -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[2]=0" `;
+            ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=0" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=0"; `;
+            ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[3]=0" -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[2]=0"; `;
             overclocksStatus["Overclocks"]["Nvidia"]["Core"][i] = "Resetted";
             overclocksStatus["Overclocks"]["Nvidia"]["Mem"][i] = "Resetted";
           }
         }
 
-        if (ocCommand) cp.execSync(`sudo ${ocCommand}`);
+        if (ocCommand) cp.execSync(`${ocCommand}`);
       }
     }
 
@@ -182,11 +181,10 @@ module.exports = async function (json, step, overclockStatus = "") {
       (ocSettings.Nvidia.CoreClock && ocCommand == "") ||
       (ocSettings.Nvidia.MemClock && ocCommand == "")
     )
-      ocCommand += "nvidia-settings ";
-    ocCommand += `-c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=${ocSettings.Nvidia.CoreClock}" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=${ocSettings.Nvidia.CoreClock}" `;
+    ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=${ocSettings.Nvidia.CoreClock}" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=${ocSettings.Nvidia.CoreClock}"; `;
     overclocksStatus["Overclocks"]["Nvidia"]["Core"][i] =
       ocSettings.Nvidia.CoreClock;
-    ocCommand += `-c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[3]=${ocSettings.Nvidia.MemClock}" -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[2]=${ocSettings.Nvidia.MemClock}" `;
+    ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[3]=${ocSettings.Nvidia.MemClock}" -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[2]=${ocSettings.Nvidia.MemClock}"; `;
     overclocksStatus["Overclocks"]["Nvidia"]["Mem"][i] =
       ocSettings.Nvidia.MemClock;
 

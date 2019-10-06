@@ -1,15 +1,13 @@
 module.exports = function (step, json = "", counter) {
   // Dependancies
   const cp = require("child_process");
-  const fs = require("fs");
   const ip = require("ip");
-  const simpleGit = require("simple-git/promise")();
   const readLastLines = require("read-last-lines");
 
+  const git = require("./git.js");
   const nvidiaGPU = require("./helpers/gpu.js");
   const amdGPU = require("./helpers/amd_rocm_parser.js");
   const amdTweak = require("./helpers/amd_mem_tweak_parser.js");
-  const restart = require("./restart");
 
   // Parsers
   const systemConfig = require("../SystemConfig.json");
@@ -86,38 +84,7 @@ module.exports = function (step, json = "", counter) {
     json["New Time"] = new Date().getTime();
     json["Runtime"] = json["New Time"] - json["Runtime Start"];
     if (counter == 0 || counter == 480) {
-      let localHash = async () => {
-        let res = await simpleGit.revparse(["HEAD"]);
-        return res.trim();
-      };
-      json["Local GitHash"] = await localHash();
-
-      let remoteHash = async () => {
-        let res = await simpleGit.listRemote(["--heads"]);
-        res = res.replace(/\t/g, ' ').split('\n');
-        for (const hash of res) {
-          if (hash.includes('refs/heads/master')) {
-            res = hash.split(' ')[0];
-            break;
-          }
-        }
-        return res;
-      }
-      json["Remote GitHash"] = await remoteHash();
-
-      if (json["Local GitHash"].replace(/[\n\t\r]/g,"") !== json["Remote GitHash"].replace(/[\n\t\r]/g,"")) {
-        console.log("Updating nOS to the lastest version... Please wait.");
-        console.log("nOS will automatically restart afterward.");
-        await simpleGit.pull("origin", "master");
-        fs.writeFileSync(
-          "../Logs/History.txt",
-          new Date().getTime() +
-          " Updated nOS to the latest Version. " +
-          json["Remote GitHash"]
-        );
-        console.log("Updated nOS to the latest Version.");
-        restart()
-      }
+      json = await git(json);
     }
 
     if (systemConfig["Nvidia Coin"] && setType[0]) {

@@ -44,8 +44,7 @@ module.exports = async function(json, step) {
     }
     for (let i = 0; i < gpuNumber; i++) {
       if (brand == "Nvidia") {
-        if (initCommand == '') initCommand += 'sudo nvidia-settings '
-        initCommand += '-a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=' + fanSpeed + '; '
+        initCommand += 'sudo nvidia-settings -a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=' + fanSpeed + '; '
       }
       if (brand == "Amd") {
         let amdGpuID = infos[brand]["GPU"][i]["ID"]
@@ -61,8 +60,7 @@ module.exports = async function(json, step) {
 
     for (let i = 0; i < gpuNumber; i++) {
       if (brand == "Nvidia") {
-        if (stopCommand == '') stopCommand += 'sudo nvidia-settings '
-        stopCommand += '-a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=20 '
+        stopCommand += 'sudo nvidia-settings -a [gpu:' + i + ']/GPUFanControlState=1 -a [fan:' + i +']/GPUTargetFanSpeed=20 '
       }
       if (brand == "Amd") {
         let amdGpuID = infos[brand]["GPU"][i]["ID"]
@@ -105,8 +103,7 @@ module.exports = async function(json, step) {
         if (infos[brand]["GPU"][i.toString()]["Temperature"] < minTemperature) {
           if (currentFanSpeed >= 21) { 
             if (brand == "Nvidia") {
-              if (fanCommand == '') fanCommand += 'sudo nvidia-settings '
-              fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed - 5} `
+              fanCommand += `sudo nvidia-settings -a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed - 5} `
               gpuTemperature[i] = currentFanSpeed - 5
             }
             if (brand == "Amd") {
@@ -117,11 +114,9 @@ module.exports = async function(json, step) {
         } else if (infos[brand]["GPU"][i.toString()]["Temperature"] > maxTemperature) {
           if (brand == "Nvidia") {
             if (currentFanSpeed <= maxFanSpeed - 5) {
-              if (fanCommand == '') fanCommand += 'sudo nvidia-settings '
-              fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed + 8} `
+              fanCommand += `sudo nvidia-settings -a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed + 8} `
               gpuTemperature[i] = currentFanSpeed + 5
             } else {
-              if (fanCommand == '') fanCommand += 'sudo nvidia-settings '
               fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${maxFanSpeed} `
               gpuTemperature[i] = maxFanSpeed + " Max"
             }

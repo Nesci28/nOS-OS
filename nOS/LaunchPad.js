@@ -15,6 +15,7 @@ const prettyjsonOptions = {
 };
 
 // Requirements
+const git = require("./git.js");
 let info = require("./getInfo.js");
 let powerControl = require("./PowerController.js");
 let ocControl = require("./OverclockController.js");
@@ -36,6 +37,7 @@ if (process.argv[process.argv.length - 1] == "stop") {
 
 if (process.argv[process.argv.length - 1] == "init") {
   (async () => {
+    await git();
     await checkXorg();
     await moveConfig();
     if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
@@ -47,6 +49,7 @@ if (process.argv[process.argv.length - 1] == "init") {
         `nmcli con modify $(nmcli c | grep wifi | cut -d' ' -f1) connection.permissions ''`
       );
     }
+    await screenBlanking();
     await clearDB();
     let counter = 0;
     await launchPad("init", counter);
@@ -83,7 +86,9 @@ async function launchPad(
   }
 
   if (step == "init") {
-    cp.execSync("sudo timedatectl set-ntp true");
+    try {
+      cp.execSync("sudo timedatectl set-ntp true");
+    } catch {}
     console.log("[2/9] Shellinabox");
     shell = await shellinabox(step);
     json.Shellinabox = shell;
@@ -131,7 +136,9 @@ async function launchPad(
 
   if (counter == 60) {
     counter = 0;
-    cp.execSync("sudo timedatectl set-ntp true");
+    try {
+      cp.execSync("sudo timedatectl set-ntp true");
+    } catch {}
     console.log("[5/5] Shellinabox");
     shell = await shellinabox("reset", shell);
     json.Shellinabox = shell;
@@ -287,6 +294,10 @@ async function stop() {
   } catch { }
 }
 
+function screenBlanking() {
+  cp.execSync('xset -dpms; xset s off;');
+}
+
 async function connection(ssid, password) {
   await require("dns").resolve("www.google.com", async function (err) {
     if (err) {
@@ -396,26 +407,27 @@ function checkXorg() {
       var fileExists = true;
     } else {
       var fileExists = false;
-      fs.writeFileSync("./Data/Init.txt", "");
-      console.log('Deleting the NTFS partition and resizing root to fullsize.')
-      let disk = cp.execSync("lsblk | grep /ntfs | sed 's/  */ /g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g'").toString().trim();
-      if (disk) {
-	disk = disk.replace(/\d/g, '');      
-        cp.execSync(`sudo umount /ntfs`)
-        cp.execSync(`sudo parted /dev/${disk} rm 4`);
-        cp.execSync(`sudo growpart /dev/${disk} 3`);
-      }
+      // console.log('Deleting the NTFS partition and resizing root to fullsize.')
+      // let disk = cp.execSync("lsblk | grep /ntfs | sed 's/  */ /g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g'").toString().trim();
+      // if (disk) {
+	    //   disk = disk.replace(/\d/g, '');     
+      //   cp.execSync(`sudo umount -l /ntfs`)
+      //   cp.execSync(`sudo parted /dev/${disk} rm 4`);
+      //   cp.execSync(`sudo growpart /dev/${disk} 3`);
+      // }
     }
 
     if (xorgNumber !== gpuNumber || !fileExists) {
+      console.log('Setting up Xorg and Nvidia privileges.')
       cp.execSync(
         "sudo nvidia-xconfig -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration"
       );
-      let command = "sudo nvidia-settings ";
+      let command = "";
       for (let i = 0; i < gpuNumber; i++) {
-        command += "-a [gpu:" + i + "]/GPUFanControlState=1 ";
+        command += "sudo nvidia-settings -a [gpu:" + i + "]/GPUFanControlState=1; ";
       }
       cp.execSync(command);
+      fs.writeFileSync("./Data/Init.txt", "");
       cp.execSync("sudo systemctl reboot");
     }
   }
