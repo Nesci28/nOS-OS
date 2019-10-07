@@ -4,6 +4,10 @@ connection() {
   if [[ ! -z $ssid && ! -z $pass ]]; then
     nmcli d wifi connect ${ssid} password ${pass} 2>&1 >/dev/null
     nmcli con modify ${ssid} connection.permissions '' 2>&1 >/dev/null
+  else 
+    echo "Not connected and no Wifi connection setup in the config file."
+    echo "Stopping nOS"
+    exit 1
   fi
 }
 
