@@ -37,9 +37,6 @@ if (process.argv[process.argv.length - 1] == "stop") {
 
 if (process.argv[process.argv.length - 1] == "init") {
   (async () => {
-    await git();
-    await checkXorg();
-    await moveConfig();
     if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
       await connection(
         systemConfig["Wifi Name"],
@@ -49,6 +46,9 @@ if (process.argv[process.argv.length - 1] == "init") {
         `nmcli con modify $(nmcli c | grep wifi | cut -d' ' -f1) connection.permissions ''`,
       );
     }
+    await git();
+    await checkXorg();
+    await moveConfig();
     await screenBlanking();
     await clearDB();
     let counter = 0;
