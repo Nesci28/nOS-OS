@@ -3,8 +3,6 @@ const fs = require("fs");
 const cp = require("child_process");
 const axios = require("axios");
 // const util = require("util");
-const md5File = require("md5-file");
-const wifi = require("node-wifi");
 const cloneDeep = require("clone-deep");
 const prettyjson = require("prettyjson");
 const prettyjsonOptions = {
@@ -37,15 +35,15 @@ if (process.argv[process.argv.length - 1] == "stop") {
 
 if (process.argv[process.argv.length - 1] == "init") {
   (async () => {
-    if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
-      await connection(
-        systemConfig["Wifi Name"],
-        systemConfig["Wifi Password"],
-      );
-      cp.exec(
-        `nmcli con modify $(nmcli c | grep wifi | cut -d' ' -f1) connection.permissions ''`,
-      );
-    }
+    // if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
+    //   await connection(
+    //     systemConfig["Wifi Name"],
+    //     systemConfig["Wifi Password"],
+    //   );
+    //   cp.exec(
+    //     `nmcli con modify $(nmcli c | grep wifi | cut -d' ' -f1) connection.permissions ''`,
+    //   );
+    // }
     await git();
     await checkXorg();
     await moveConfig();
