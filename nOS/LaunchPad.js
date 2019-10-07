@@ -440,7 +440,13 @@ async function moveConfig() {
     .toString()
     .trim();
   if (disk) {
-    cp.execSync(`sudo mount ${disk} /ntfs`);
+    if (
+      !cp
+        .execSync(`lsblk | grep ntfs`)
+        .toString()
+        .trim()
+    )
+      cp.execSync(`sudo mount ${disk} /ntfs`);
     const files = ["Overclocks.json", "SystemConfig.json", "CoinsConfig.json"];
     for (let file of files) {
       if (fs.existsSync(`/ntfs/${file}`)) {
