@@ -433,18 +433,22 @@ function checkXorg() {
 }
 
 async function moveConfig() {
+  var ntfs = false;
   const disk = cp
     .execSync("sudo blkid | grep 32C01F9958CD98C5 | cut -d':' -f1")
     .toString()
     .trim();
   if (disk) {
-    if (
-      !cp
-        .execSync(`lsblk | grep ntfs`)
-        .toString()
-        .trim()
-    )
-      cp.execSync(`sudo mount ${disk} /ntfs`);
+    let list = cp
+      .execSync(`lsblk`)
+      .toString()
+      .trim();
+    list = list.split("\n").forEach(el => {
+      if (el.includes("ntfs")) {
+        ntfs = true;
+      }
+    }, ntfs);
+    if (!ntfs) cp.execSync(`sudo mount ${disk} /ntfs`);
     const files = ["Overclocks.json", "SystemConfig.json", "CoinsConfig.json"];
     for (let file of files) {
       if (fs.existsSync(`/ntfs/${file}`)) {
