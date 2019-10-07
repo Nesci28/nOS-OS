@@ -16,7 +16,7 @@ if (process.argv[process.argv.length - 1] == "help") {
 
 if (process.argv[process.argv.length - 1] == "stats") {
   let stream = cp.spawn("pm2", ["logs", "0", "--raw"]);
-  stream.stdout.on("data", function (data) {
+  stream.stdout.on("data", function(data) {
     console.log(data.toString());
   });
 }
@@ -36,7 +36,7 @@ if (process.argv[process.argv.length - 1] == "miner") {
   return (async () => {
     const logs = await getMinerLog();
     for (log in logs) {
-      console.log(logs[log])
+      console.log(logs[log]);
     }
     process.exit();
   })();
@@ -44,9 +44,9 @@ if (process.argv[process.argv.length - 1] == "miner") {
 
 async function getMinerLog(brand) {
   const minerLogs = {
-    "Nvidia": "",
-    "Amd": "",
-    "CPU": ""
+    Nvidia: "",
+    Amd: "",
+    CPU: "",
   };
 
   try {
@@ -57,42 +57,45 @@ async function getMinerLog(brand) {
         if (jlist[i].name == `miner${brand}`) {
           let minerLog = await readLastLines.read(
             `/home/nos/.pm2/logs/miner${brand}-out.log`,
-            15
+            15,
           );
           minerLogs[brand] = minerLog;
         }
       }
     }
-  } catch { }
+  } catch {}
   return minerLogs;
 }
 
 if (process.argv[process.argv.length - 1] == "hash") {
   (async () => {
     let json = await getInfo("ssh");
-    if (json.Nvidia.GPU.length > 0) console.log("Nvidia Total Hashrate: ", json.Nvidia["Total Hashrate"]);
-    if (json.Amd.GPU.length > 0) console.log("Amd Total Hashrate:", json.Amd["Total Hashrate"]);
-    if (json.CPU["Total Hashrate"]) console.log("CPU Total Hashrate:", json.CPU["Total Hashrate"]);
+    if (json.Nvidia.GPU.length > 0)
+      console.log("Nvidia Total Hashrate: ", json.Nvidia["Total Hashrate"]);
+    if (json.Amd.GPU.length > 0)
+      console.log("Amd Total Hashrate:", json.Amd["Total Hashrate"]);
+    if (json.CPU["Total Hashrate"])
+      console.log("CPU Total Hashrate:", json.CPU["Total Hashrate"]);
     process.exit();
   })();
 }
 
 function kill() {
   return cp.execSync(
-    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} node LaunchPad.js stop`
+    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} node LaunchPad.js stop`,
   );
 }
 
 function start() {
   return cp.exec(
-    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} ./start.sh`
+    `cd ${findnOS()}; DISPLAY=:0 XAUTHORITY=${findXAuthority()} ./start.sh`,
   );
 }
 
 function findXAuthority() {
   return cp
     .execSync(
-      "ps -u $(id -u) -o pid= | xargs -I{} cat /proc/{}/environ 2>/dev/null | tr '\\0' '\\n' | grep -m1 '^XAUTHORITY='"
+      "ps -u $(id -u) -o pid= | xargs -I{} cat /proc/{}/environ 2>/dev/null | tr '\\0' '\\n' | grep -m1 '^XAUTHORITY='",
     )
     .toString()
     .trim()

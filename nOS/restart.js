@@ -5,9 +5,18 @@ module.exports = async function restart() {
   // startOutput.stdout.on("data", data => {
   //   console.log(data.toString().trim());
   // });
-  const pm2List = JSON.parse(cp.execSync('pm2 jlist').toString().trim());
+  const pm2List = JSON.parse(
+    cp
+      .execSync("pm2 jlist")
+      .toString()
+      .trim(),
+  );
   pm2List.forEach(proc => {
-    if (proc.name === 'minerCpu' || proc.name === 'minerAmd' || proc.name === 'minerNvidia') {
+    if (
+      proc.name === "minerCpu" ||
+      proc.name === "minerAmd" ||
+      proc.name === "minerNvidia"
+    ) {
       cp.execSync(`pm2 stop ${proc.name}`);
     }
   });

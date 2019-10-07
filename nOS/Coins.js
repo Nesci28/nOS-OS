@@ -11,15 +11,15 @@ module.exports = async function(json) {
         Coin: null,
         Algo: null,
         Miner: null,
-        Command: null
+        Command: null,
       },
       Amd: {
         Coin: null,
         Algo: null,
         Miner: null,
-        Command: null
-      }
-    }
+        Command: null,
+      },
+    },
   };
 
   // Setup

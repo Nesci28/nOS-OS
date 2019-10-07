@@ -1,4 +1,4 @@
-module.exports = function (step, json = "", counter) {
+module.exports = function(step, json = "", counter) {
   // Dependancies
   const cp = require("child_process");
   const ip = require("ip");
@@ -37,7 +37,7 @@ module.exports = function (step, json = "", counter) {
       IP: ip.address(),
       Shellinabox: {
         Ngrok: null,
-        Localtunnel: null
+        Localtunnel: null,
       },
       "Local GitHash": null,
       "Remote GitHash": null,
@@ -50,7 +50,7 @@ module.exports = function (step, json = "", counter) {
         "Avg Temperature": null,
         "Coin Info": {},
         GPU: [],
-        "Miner Log": null
+        "Miner Log": null,
       },
       Amd: {
         Coin: null,
@@ -60,7 +60,7 @@ module.exports = function (step, json = "", counter) {
         "Avg Temperature": null,
         "Coin Info": {},
         GPU: [],
-        "Miner Log": null
+        "Miner Log": null,
       },
       CPU: {
         Coins: null,
@@ -68,11 +68,11 @@ module.exports = function (step, json = "", counter) {
         "Total Hashrate": null,
         "Coin Info": {},
         GPU: [],
-        "Miner Log": null
+        "Miner Log": null,
       },
       "System Config": systemConfig,
       "Coins Config": coinsConfig,
-      "Overclocks Config": overclocksConfig
+      "Overclocks Config": overclocksConfig,
     };
   }
 
@@ -147,11 +147,11 @@ module.exports = function (step, json = "", counter) {
       let amdRocm = cp.execSync("./helpers/ROC-smi/rocm-smi");
       let amdStats = amdGPU(amdRocm.toString());
       let amdMem = await amdTweak(
-        cp.execSync("sudo ./helpers/amdmemtweak --current").toString()
+        cp.execSync("sudo ./helpers/amdmemtweak --current").toString(),
       );
       let amdName = cp
         .execSync(
-          "sudo ./helpers/amdmeminfo -q -s | cut -d ':' -f3 | sed 's/Radeon //g'"
+          "sudo ./helpers/amdmeminfo -q -s | cut -d ':' -f3 | sed 's/Radeon //g'",
         )
         .toString()
         .trim()
@@ -178,7 +178,7 @@ module.exports = function (step, json = "", counter) {
     for (let i = 0; i < json[brand]["GPU"].length; i++) {
       if (json[brand]["GPU"][i]["Temperature"] !== null) {
         avgTemperature += Number(
-          json[brand]["GPU"][i]["Temperature"].toString().replace(/\D/g, "")
+          json[brand]["GPU"][i]["Temperature"].toString().replace(/\D/g, ""),
         );
       }
     }
@@ -196,7 +196,7 @@ module.exports = function (step, json = "", counter) {
     let minerRunning = undefined;
     try {
       minerRunning = await checkRunningMiner(brand);
-    } catch { }
+    } catch {}
     // run the getHashrate for that miner
     if (minerRunning) {
       let hashrate = require("../Miners/" + miner + "/getHashrate.js");
@@ -237,7 +237,7 @@ module.exports = function (step, json = "", counter) {
       "Fan Speed": null,
       Name: null,
       Hashrate: null,
-      "Memory Timings": {}
+      "Memory Timings": {},
     };
 
     return gpuObject;
@@ -316,12 +316,12 @@ module.exports = function (step, json = "", counter) {
         if (jlist[i].name == `miner${brand}`) {
           let minerLog = await readLastLines.read(
             `/home/nos/.pm2/logs/miner${brand}-out.log`,
-            15
+            15,
           );
           return minerLog;
         }
       }
-    } catch { }
+    } catch {}
   }
 };
 
@@ -334,8 +334,8 @@ function getMacAddr() {
         if (section["address"].match("192.168")) {
           macAddr = section["mac"];
         }
-      } catch { }
-    })
-  })
+      } catch {}
+    });
+  });
   return macAddr;
 }

@@ -1,4 +1,4 @@
-module.exports = async function (json, step, overclockStatus = "") {
+module.exports = async function(json, step, overclockStatus = "") {
   // Dependancies
   const cp = require("child_process");
 
@@ -112,7 +112,7 @@ module.exports = async function (json, step, overclockStatus = "") {
         // Getting the list of the files to overclock
         let amdGpuFiles = cp
           .execSync(
-            'find / -name pp_od_clk_voltage 2>&1 | grep -v "Permission denied"'
+            'find / -name pp_od_clk_voltage 2>&1 | grep -v "Permission denied"',
           )
           .toString()
           .trim();
@@ -129,7 +129,10 @@ module.exports = async function (json, step, overclockStatus = "") {
             .execSync(`cat ${file}`)
             .toString()
             .trim();
-          pstatesValues = pstatesValues.split('OD_RANGE:')[0].trim().split('\n');
+          pstatesValues = pstatesValues
+            .split("OD_RANGE:")[0]
+            .trim()
+            .split("\n");
           pstatesValues = pstatesValues[pstatesValues.length - 1];
           pstatesValues = pstatesValues.replace(/\s\s+/g, " ").split(" ");
 
@@ -141,7 +144,7 @@ module.exports = async function (json, step, overclockStatus = "") {
           overclocksStatus["Overclocks"]["Amd"]["Mem"][index] = newValue;
 
           cp.execSync(
-            `sudo sh -c "echo 'm 2 ${newValue} ${voltage}' > ${file}"`
+            `sudo sh -c "echo 'm 2 ${newValue} ${voltage}' > ${file}"`,
           );
           cp.execSync(`sudo sh -c "echo 'c' > ${file}"`);
         });
@@ -181,7 +184,7 @@ module.exports = async function (json, step, overclockStatus = "") {
       (ocSettings.Nvidia.CoreClock && ocCommand == "") ||
       (ocSettings.Nvidia.MemClock && ocCommand == "")
     )
-    ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=${ocSettings.Nvidia.CoreClock}" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=${ocSettings.Nvidia.CoreClock}"; `;
+      ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[3]=${ocSettings.Nvidia.CoreClock}" -c :0 -a "[gpu:${i}]/GPUGraphicsClockOffset[2]=${ocSettings.Nvidia.CoreClock}"; `;
     overclocksStatus["Overclocks"]["Nvidia"]["Core"][i] =
       ocSettings.Nvidia.CoreClock;
     ocCommand += `sudo nvidia-settings -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[3]=${ocSettings.Nvidia.MemClock}" -c :0 -a "[gpu:${i}]/GPUMemoryTransferRateOffset[2]=${ocSettings.Nvidia.MemClock}"; `;

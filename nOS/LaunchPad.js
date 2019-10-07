@@ -11,7 +11,7 @@ const prettyjsonOptions = {
   keysColor: "white",
   dashColor: "magenta",
   stringColor: "green",
-  numberColor: "yellow"
+  numberColor: "yellow",
 };
 
 // Requirements
@@ -43,10 +43,10 @@ if (process.argv[process.argv.length - 1] == "init") {
     if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
       await connection(
         systemConfig["Wifi Name"],
-        systemConfig["Wifi Password"]
+        systemConfig["Wifi Password"],
       );
       cp.exec(
-        `nmcli con modify $(nmcli c | grep wifi | cut -d' ' -f1) connection.permissions ''`
+        `nmcli con modify $(nmcli c | grep wifi | cut -d' ' -f1) connection.permissions ''`,
       );
     }
     await screenBlanking();
@@ -66,7 +66,7 @@ async function launchPad(
   watch,
   database = "",
   json = "",
-  shell = ""
+  shell = "",
 ) {
   if (step !== "shellinabox") {
     if (step == "init") {
@@ -235,7 +235,7 @@ async function launchPad(
       watch,
       database,
       json,
-      shell
+      shell,
     );
   }, 15000);
 }
@@ -272,11 +272,11 @@ async function stop() {
     "minerNvidia",
     "minerAmd",
     "minerCpu",
-    "ethpill"
+    "ethpill",
   ];
   for (let PIDS of pm2Processes) {
     let pm2List = cp.execSync(
-      `ps aux | grep pm2 | grep ${PIDS} | grep "node" | sed 's/  */ /g' | cut -d ' ' -f2`
+      `ps aux | grep pm2 | grep ${PIDS} | grep "node" | sed 's/  */ /g' | cut -d ' ' -f2`,
     );
     pm2List = pm2List
       .toString()
@@ -285,27 +285,27 @@ async function stop() {
     for (let ID of pm2List) {
       try {
         cp.execSync(`kill ${ID} 2>&1 >/dev/null`);
-      } catch { }
+      } catch {}
     }
   }
 
   try {
     cp.execSync("tmux kill-session -t miner 2>&1 >/dev/null");
-  } catch { }
+  } catch {}
 }
 
 function screenBlanking() {
-  cp.execSync('xset -dpms; xset s off;');
+  cp.execSync("xset -dpms; xset s off;");
 }
 
 async function connection(ssid, password) {
-  await require("dns").resolve("www.google.com", async function (err) {
+  await require("dns").resolve("www.google.com", async function(err) {
     if (err) {
       console.log("No connection, connecting...");
       await wifi.init({
-        iface: null
+        iface: null,
       });
-      await wifi.connect({ ssid: ssid, password: password }, function (err) {
+      await wifi.connect({ ssid: ssid, password: password }, function(err) {
         if (err) {
           console.log(err);
         }
@@ -333,7 +333,7 @@ async function clearDB() {
     IP: null,
     Shellinabox: {
       Localtunnel: { url: null },
-      Serveo: { url: null }
+      Serveo: { url: null },
     },
     "Local GitHash": null,
     "Remote GitHash": null,
@@ -346,7 +346,7 @@ async function clearDB() {
       "Avg Temperature": null,
       "Coin Info": {},
       GPU: {},
-      "Miner Log": null
+      "Miner Log": null,
     },
     Amd: {
       Coin: null,
@@ -356,7 +356,7 @@ async function clearDB() {
       "Avg Temperature": null,
       "Coin Info": {},
       GPU: [],
-      "Miner Log": null
+      "Miner Log": null,
     },
     CPU: {
       Coins: null,
@@ -364,16 +364,16 @@ async function clearDB() {
       "Total Hashrate": null,
       "Coin Info": {},
       GPU: [],
-      "Miner Log": null
+      "Miner Log": null,
     },
     "System Config": { Serial: 1 },
     "Coins Config": { Serial: 1 },
-    "Overclocks Config": { Serial: 1 }
+    "Overclocks Config": { Serial: 1 },
   };
   const existingDB = await axios.post(urlGet, {
     username: systemConfig["WebApp Username"],
     password: systemConfig["WebApp Password"],
-    hostname: systemConfig["Rig Hostname"]
+    hostname: systemConfig["Rig Hostname"],
   });
   if (existingDB.data) {
     try {
@@ -392,7 +392,7 @@ function checkXorg() {
   if (/NVIDIA/.test(lspci)) {
     xorgNumber = cp
       .execSync(
-        'cat /etc/X11/xorg.conf | grep \'Option         "Coolbits" "28"\' | wc -l'
+        'cat /etc/X11/xorg.conf | grep \'Option         "Coolbits" "28"\' | wc -l',
       )
       .toString()
       .trim();
@@ -410,7 +410,7 @@ function checkXorg() {
       // console.log('Deleting the NTFS partition and resizing root to fullsize.')
       // let disk = cp.execSync("lsblk | grep /ntfs | sed 's/  */ /g' | cut -d' ' -f1 | sed 's/[^a-zA-Z0-9]//g'").toString().trim();
       // if (disk) {
-	    //   disk = disk.replace(/\d/g, '');     
+      //   disk = disk.replace(/\d/g, '');
       //   cp.execSync(`sudo umount -l /ntfs`)
       //   cp.execSync(`sudo parted /dev/${disk} rm 4`);
       //   cp.execSync(`sudo growpart /dev/${disk} 3`);
@@ -418,13 +418,14 @@ function checkXorg() {
     }
 
     if (xorgNumber !== gpuNumber || !fileExists) {
-      console.log('Setting up Xorg and Nvidia privileges.')
+      console.log("Setting up Xorg and Nvidia privileges.");
       cp.execSync(
-        "sudo nvidia-xconfig -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration"
+        "sudo nvidia-xconfig -a --enable-all-gpus --cool-bits=28 --allow-empty-initial-configuration",
       );
       let command = "";
       for (let i = 0; i < gpuNumber; i++) {
-        command += "sudo nvidia-settings -a [gpu:" + i + "]/GPUFanControlState=1; ";
+        command +=
+          "sudo nvidia-settings -a [gpu:" + i + "]/GPUFanControlState=1; ";
       }
       cp.execSync(command);
       fs.writeFileSync("./Data/Init.txt", "");
@@ -434,13 +435,22 @@ function checkXorg() {
 }
 
 async function moveConfig() {
-  const files = ["Overclocks.json", "SystemConfig.json", "CoinsConfig.json"];
-  for (let file of files) {
-    if (fs.existsSync(`/ntfs/${file}`)) {
-      if (!checkFiles(`/home/nos/${file}`, `/ntfs/${file}`)) {
-        cp.execSync(`sudo mv /ntfs/${file} /home/nos/${file}`);
-        if (file == "SystemConfig.json") {
-          systemConfig = require("../SystemConfig.json");
+  const disk = cp
+    .execSync("sudo blkid | grep 32C01F9958CD98C5 | cut -d':' -f1")
+    .toString()
+    .trim();
+  if (disk) {
+    cp.execSync(`sudo mount ${disk} /ntfs`);
+    const files = ["Overclocks.json", "SystemConfig.json", "CoinsConfig.json"];
+    for (let file of files) {
+      if (fs.existsSync(`/ntfs/${file}`)) {
+        if (
+          fs.statSync(`/home/nos/${file}`).mtimeMs <
+          fs.statSync(`/ntfs/${file}`).mtimeMs
+        ) {
+          cp.execSync(`sudo cp /ntfs/${file} /home/nos/${file}`);
+          if (file == "SystemConfig.json")
+            systemConfig = require("../SystemConfig.json");
         }
       }
     }
@@ -457,5 +467,5 @@ async function moveConfig() {
 }
 
 function checkFiles(file1, file2) {
-  return md5File.sync(file1) === md5File.sync(file2);
+  return fs.statSync(file1).mtimeMs < fs.statSync(file2).mtimeMs;
 }

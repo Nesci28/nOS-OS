@@ -1,4 +1,4 @@
-module.exports = async function (step, shellinabox = "") {
+module.exports = async function(step, shellinabox = "") {
   // Dependancies
   const cp = require("child_process");
   const ps = require("ps-node");
@@ -17,12 +17,12 @@ module.exports = async function (step, shellinabox = "") {
     shellinabox = {
       Localtunnel: {
         URL: null,
-        PID: null
+        PID: null,
       },
       Serveo: {
         URL: null,
-        PID: null
-      }
+        PID: null,
+      },
     };
   }
 
@@ -46,7 +46,7 @@ module.exports = async function (step, shellinabox = "") {
 function kill(pids, ps) {
   for (let pid of pids) {
     if (typeof pid == "number") {
-      ps.kill(pid, function (err) {
+      ps.kill(pid, function(err) {
         if (err) {
           console.log(err);
         }
@@ -69,8 +69,8 @@ async function createTunnels(step, systemConfigs, cp, shellinabox) {
 
       let localtunnel = cp.spawn("lt", ["--port", "4200"]);
       shellinabox.Localtunnel.PID = localtunnel.pid;
-      new Promise(function (resolve, reject) {
-        localtunnel.stdout.on("data", async function (data) {
+      new Promise(function(resolve, reject) {
+        localtunnel.stdout.on("data", async function(data) {
           if (shellinabox.Localtunnel.URL == null) {
             shellinabox.Localtunnel.URL = await data
               .toString()
@@ -81,17 +81,23 @@ async function createTunnels(step, systemConfigs, cp, shellinabox) {
         });
       });
 
-      let serveo = cp.spawn("ssh", ["-o", "ServerAliveInterval=60", "-R", "80:localhost:4200", "serveo.net"]);
+      let serveo = cp.spawn("ssh", [
+        "-o",
+        "ServerAliveInterval=60",
+        "-R",
+        "80:localhost:4200",
+        "serveo.net",
+      ]);
       shellinabox.Serveo.PID = serveo.pid;
-      new Promise(function (resolve, reject) {
-        serveo.stdout.on("data", async function (data) {
+      new Promise(function(resolve, reject) {
+        serveo.stdout.on("data", async function(data) {
           if (shellinabox.Serveo.URL == null) {
             shellinabox.Serveo.URL = await data
               .toString()
               .split(" ")[4]
               .replace(
                 /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
-                ""
+                "",
               )
               .replace("\r", "")
               .replace("\n", "");

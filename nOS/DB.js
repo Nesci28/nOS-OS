@@ -4,20 +4,20 @@ const cp = require("child_process");
 const axios = require("axios");
 const monk = require("monk");
 
-const restart = require('./restart');
+const restart = require("./restart");
 
 module.exports = async function(json, existingDB = "") {
   // Exporting DB information
   let sendToDBStatus = {
     DB: {
       Status: null,
-      Entry: null
-    }
+      Entry: null,
+    },
   };
   // let urlGet = "http://localhost:5000/db"
   // let urlPost = "http://localhost:5000/rig/add"
   // const urlGet = "https://node-nos.herokuapp.com/api/v2/db";
-  const urlGet = "https://node-nos.herokuapp.com/api/v2/db"
+  const urlGet = "https://node-nos.herokuapp.com/api/v2/db";
   const urlPostAlternative = "https://nos-server.now.sh/rig/add";
   const urlPost = "https://node-nos.herokuapp.com/api/v2/rig/add";
 
@@ -25,17 +25,18 @@ module.exports = async function(json, existingDB = "") {
     existingDB = await axios.post(urlGet, {
       username: json.Username,
       password: json.Password,
-      hostname: json.Hostname
+      hostname: json.Hostname,
     });
     existingDB = existingDB.data;
     if (existingDB != "New rig detected!") existingDB = [existingDB];
   }
 
-  let entries = await axios.get(urlGet, { params: {
-    username: json.Username,
-    password: json.Password,
-    hostname: json.Hostname
-  }
+  let entries = await axios.get(urlGet, {
+    params: {
+      username: json.Username,
+      password: json.Password,
+      hostname: json.Hostname,
+    },
   });
   entries = entries.data;
   await checkForNewConfigs(entries, json);
@@ -62,7 +63,7 @@ module.exports = async function(json, existingDB = "") {
         } catch {
           await axios.post(urlPostAlternative, json);
         } finally {
-          if (externalCommand === 'restart') {
+          if (externalCommand === "restart") {
             restart();
           } else {
             cp.exec(`${externalCommand}`);
@@ -108,13 +109,13 @@ module.exports = async function(json, existingDB = "") {
       json["_id"] = monk.id();
       return {
         status: "New rig detected, creating a new entry in the DB.",
-        json: json
+        json: json,
       };
     } else {
       json["_id"] = existingDB[0]["_id"];
       return {
         status: "Updated the DB with the latest values.",
-        json: json
+        json: json,
       };
     }
   }
