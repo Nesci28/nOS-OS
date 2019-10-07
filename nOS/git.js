@@ -1,4 +1,5 @@
 module.exports = async function(json) {
+  const fs = require("fs");
   const simpleGit = require("simple-git/promise")();
   const restart = require("./restart");
 
