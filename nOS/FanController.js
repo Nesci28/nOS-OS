@@ -135,10 +135,10 @@ module.exports = async function(json, step) {
           if (brand == "Nvidia") {
             if (currentFanSpeed <= maxFanSpeed - 5) {
               fanCommand += `sudo nvidia-settings -a [fan:${i}]/GPUTargetFanSpeed=${currentFanSpeed +
-                8} `;
+                8}; `;
               gpuTemperature[i] = currentFanSpeed + 5;
             } else {
-              fanCommand += `-a [fan:${i}]/GPUTargetFanSpeed=${maxFanSpeed} `;
+              fanCommand += `sudo nvidia-settings -a [fan:${i}]/GPUTargetFanSpeed=${maxFanSpeed}; `;
               gpuTemperature[i] = maxFanSpeed + " Max";
             }
           }
