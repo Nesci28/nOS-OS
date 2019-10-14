@@ -35,15 +35,6 @@ if (process.argv[process.argv.length - 1] == "stop") {
 
 if (process.argv[process.argv.length - 1] == "init") {
   (async () => {
-    // if (systemConfig["Wifi Name"] && systemConfig["Wifi Password"]) {
-    //   await connection(
-    //     systemConfig["Wifi Name"],
-    //     systemConfig["Wifi Password"],
-    //   );
-    //   cp.exec(
-    //     `nmcli con modify $(nmcli c | grep wifi | cut -d' ' -f1) connection.permissions ''`,
-    //   );
-    // }
     await git();
     await checkXorg();
     await moveConfig();
@@ -65,6 +56,7 @@ async function launchPad(
   database = "",
   json = "",
   shell = "",
+  secondPass = "",
 ) {
   if (step !== "shellinabox") {
     if (step == "init") {
@@ -108,9 +100,10 @@ async function launchPad(
     watch = await watchdog(json, step);
   }
 
-  if (counter == 5) {
+  if (counter == 5 && secondPass !== "done") {
     console.log("[2/5] Configuring the GPU(s) Overclocks (second pass)");
     overclocks = await ocControl(json, "rxboost", overclocks);
+    secondPass = "done";
   }
 
   if (step == "running") {
@@ -234,6 +227,7 @@ async function launchPad(
       database,
       json,
       shell,
+      secondPass,
     );
   }, 15000);
 }
