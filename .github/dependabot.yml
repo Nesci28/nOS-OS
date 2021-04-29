@@ -1,0 +1,32 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/nOS"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: simple-git
+    versions:
+    - 2.31.0
+    - 2.32.0
+    - 2.34.2
+    - 2.35.0
+    - 2.35.1
+    - 2.35.2
+    - 2.36.0
+    - 2.36.1
+    - 2.36.2
+    - 2.37.0
+  - dependency-name: monk
+    versions:
+    - 7.3.3
+- package-ecosystem: npm
+  directory: "/Build"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: monk
+    versions:
+    - 7.3.3
